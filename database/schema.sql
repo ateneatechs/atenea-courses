@@ -89,9 +89,9 @@ CREATE INDEX IF NOT EXISTS idx_purchases_user_course ON course_purchases(user_id
 CREATE INDEX IF NOT EXISTS idx_progress_user ON lesson_progress(user_id, lesson_id);
 
 INSERT INTO categories (name, slug) VALUES
-  ('Cut', 'cut'),
-  ('Color', 'color'),
-  ('Styling', 'styling'),
-  ('Bridal', 'bridal'),
-  ('Business', 'business')
+  ('Fade', 'fade'),
+  ('Barba', 'beard'),
+  ('Corte Clásico', 'clasico'),
+  ('Colorimetría', 'colorimetria'),
+  ('Negocio', 'negocio')
 ON CONFLICT (slug) DO NOTHING;
