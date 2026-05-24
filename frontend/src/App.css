@@ -1,0 +1,9 @@
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+.app > main, .app > div { flex: 1; }
+
+.loading-screen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--text-body-lg);
+  color: var(--color-on-surface-variant);
+}

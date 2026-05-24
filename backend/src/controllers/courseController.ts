@@ -1,0 +1,232 @@
+import { Request, Response } from 'express';
+import { query } from '../config/database';
+
+const checkAccess = async (userId: string, courseId: string, role?: string): Promise<boolean> => {
+  if (role === 'admin') return true;
+  const [sub, purchase] = await Promise.all([
+    query(`SELECT id FROM subscriptions WHERE user_id = $1 AND status = 'active' AND ends_at > NOW()`, [userId]),
+    query('SELECT id FROM course_purchases WHERE user_id = $1 AND course_id = $2', [userId, courseId]),
+  ]);
+  return sub.rows.length > 0 || purchase.rows.length > 0;
+};
+
+export const getCourses = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { category, search, sort = 'newest' } = req.query;
+    const params: unknown[] = [];
+    let sql = `
+      SELECT c.*, cat.name AS category_name, cat.slug AS category_slug
+      FROM courses c
+      LEFT JOIN categories cat ON c.category_id = cat.id
+      WHERE c.is_published = true
+    `;
+
+    if (category && category !== 'all') {
+      params.push(category);
+      sql += ` AND cat.slug = $${params.length}`;
+    }
+    if (search) {
+      params.push(`%${search}%`);
+      sql += ` AND (c.title ILIKE $${params.length} OR c.instructor_name ILIKE $${params.length})`;
+    }
+
+    const orderMap: Record<string, string> = {
+      newest: 'c.created_at DESC',
+      popular: 'c.total_lessons DESC',
+      'price-desc': 'c.price DESC NULLS LAST',
+    };
+    sql += ` ORDER BY ${orderMap[sort as string] || orderMap.newest}`;
+
+    const result = await query(sql, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('GetCourses error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getCourseById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const courseResult = await query(
+      `SELECT c.*, cat.name AS category_name FROM courses c
+       LEFT JOIN categories cat ON c.category_id = cat.id
+       WHERE c.id = $1 AND c.is_published = true`,
+      [id]
+    );
+    if (courseResult.rows.length === 0) {
+      res.status(404).json({ message: 'Course not found' });
+      return;
+    }
+
+    const lessonsResult = await query(
+      'SELECT * FROM lessons WHERE course_id = $1 ORDER BY section_number, order_index',
+      [id]
+    );
+
+    let hasAccess = false;
+    if (req.user) {
+      hasAccess = await checkAccess(req.user.userId, id, req.user.role);
+    }
+
+    const lessons = lessonsResult.rows.map(l => ({
+      ...l,
+      video_url: hasAccess ? l.video_url : null,
+    }));
+
+    res.json({ ...courseResult.rows[0], lessons, hasAccess });
+  } catch (error) {
+    console.error('GetCourseById error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getInstructors = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await query(`
+      SELECT
+        c.instructor_name AS name,
+        COUNT(c.id)::int AS course_count,
+        MIN(c.thumbnail_url) AS avatar_url,
+        COALESCE(
+          array_agg(DISTINCT cat.name) FILTER (WHERE cat.name IS NOT NULL),
+          '{}'::text[]
+        ) AS categories
+      FROM courses c
+      LEFT JOIN categories cat ON c.category_id = cat.id
+      WHERE c.is_published = true
+      GROUP BY c.instructor_name
+      ORDER BY COUNT(c.id) DESC, c.instructor_name ASC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('GetInstructors error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getCategories = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await query('SELECT * FROM categories ORDER BY name');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('GetCategories error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const createSubscription = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { plan = 'monthly' } = req.body;
+    const userId = req.user!.userId;
+
+    await query(
+      `UPDATE subscriptions SET status = 'cancelled' WHERE user_id = $1 AND status = 'active'`,
+      [userId]
+    );
+
+    const startsAt = new Date();
+    const endsAt = new Date();
+    plan === 'annual' ? endsAt.setFullYear(endsAt.getFullYear() + 1) : endsAt.setMonth(endsAt.getMonth() + 1);
+
+    const result = await query(
+      `INSERT INTO subscriptions (user_id, plan, status, starts_at, ends_at)
+       VALUES ($1, $2, 'active', $3, $4) RETURNING *`,
+      [userId, plan, startsAt, endsAt]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('CreateSubscription error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const purchaseCourse = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { courseId } = req.body;
+    const userId = req.user!.userId;
+
+    const courseResult = await query('SELECT * FROM courses WHERE id = $1 AND is_published = true', [courseId]);
+    if (courseResult.rows.length === 0) {
+      res.status(404).json({ message: 'Course not found' });
+      return;
+    }
+
+    const existing = await query(
+      'SELECT id FROM course_purchases WHERE user_id = $1 AND course_id = $2',
+      [userId, courseId]
+    );
+    if (existing.rows.length > 0) {
+      res.status(400).json({ message: 'Course already purchased' });
+      return;
+    }
+
+    const course = courseResult.rows[0];
+    const result = await query(
+      'INSERT INTO course_purchases (user_id, course_id, amount) VALUES ($1, $2, $3) RETURNING *',
+      [userId, courseId, course.price]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('PurchaseCourse error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getLessonById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+
+    const lessonResult = await query('SELECT * FROM lessons WHERE id = $1', [id]);
+    if (lessonResult.rows.length === 0) {
+      res.status(404).json({ message: 'Lesson not found' });
+      return;
+    }
+
+    const lesson = lessonResult.rows[0];
+    const hasAccess = await checkAccess(userId, lesson.course_id, req.user!.role);
+
+    if (!hasAccess) {
+      res.status(403).json({ message: 'Access denied. Subscribe or purchase this course.' });
+      return;
+    }
+
+    const progressResult = await query(
+      'SELECT * FROM lesson_progress WHERE user_id = $1 AND lesson_id = $2',
+      [userId, id]
+    );
+
+    res.json({ ...lesson, progress: progressResult.rows[0] || null });
+  } catch (error) {
+    console.error('GetLessonById error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateLessonProgress = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { completed, progressSeconds } = req.body;
+    const userId = req.user!.userId;
+
+    const lessonResult = await query('SELECT course_id FROM lessons WHERE id = $1', [id]);
+    if (lessonResult.rows.length === 0) {
+      res.status(404).json({ message: 'Lesson not found' });
+      return;
+    }
+
+    await query(
+      `INSERT INTO lesson_progress (user_id, lesson_id, course_id, completed, progress_seconds, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       ON CONFLICT (user_id, lesson_id)
+       DO UPDATE SET completed = $4, progress_seconds = $5, updated_at = NOW()`,
+      [userId, id, lessonResult.rows[0].course_id, completed || false, progressSeconds || 0]
+    );
+
+    res.json({ message: 'Progress updated' });
+  } catch (error) {
+    console.error('UpdateProgress error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

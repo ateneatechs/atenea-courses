@@ -1,0 +1,153 @@
+.membership {
+  padding-top: calc(var(--navbar-height) + 80px);
+  padding-bottom: var(--spacing-section-padding);
+  padding-left: var(--spacing-margin-desktop);
+  padding-right: var(--spacing-margin-desktop);
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+}
+
+.membership-header { text-align: center; margin-bottom: 80px; }
+.membership-eyebrow {
+  display: block;
+  font-size: var(--text-label-caps);
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: 16px;
+}
+.membership-title {
+  font-family: var(--font-display);
+  font-size: var(--text-headline-xl);
+  color: var(--color-on-surface);
+  margin-bottom: 20px;
+}
+.membership-subtitle {
+  font-size: var(--text-body-lg);
+  color: var(--color-on-surface-variant);
+  max-width: 560px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.membership-plans {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.plan-card {
+  padding: 48px;
+  border-radius: var(--radius-lg);
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+.plan-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-xl); }
+
+.plan-icon-wrap {
+  width: 64px; height: 64px;
+  border-radius: var(--radius-full);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 28px;
+}
+.plan-icon-wrap.primary { background: var(--color-primary-container); }
+.plan-icon-wrap.secondary { background: var(--color-surface-container-highest); }
+
+.plan-icon { font-size: 32px; }
+.plan-icon.primary { color: var(--color-on-primary-container); }
+.plan-icon.secondary { color: var(--color-primary); }
+
+.plan-name {
+  font-family: var(--font-display);
+  font-size: var(--text-headline-md);
+  color: var(--color-on-surface);
+  margin-bottom: 12px;
+}
+
+.plan-desc {
+  font-size: var(--text-body-md);
+  color: var(--color-on-surface-variant);
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.plan-price { margin-bottom: 40px; }
+.plan-price-from {
+  font-size: var(--text-label-caps);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-variant);
+  display: block;
+  margin-bottom: 6px;
+}
+.plan-price-amount {
+  font-family: var(--font-display);
+  font-size: var(--text-headline-xl);
+  color: var(--color-on-surface);
+}
+.plan-price-period {
+  font-size: var(--text-label-caps);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-variant);
+}
+
+.plan-features {
+  list-style: none;
+  text-align: left;
+  width: 100%;
+  margin-bottom: 40px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.plan-feature {
+  display: flex; align-items: center; gap: 12px;
+  font-size: var(--text-body-md);
+  color: var(--color-on-surface-variant);
+}
+.plan-feature-icon { color: var(--color-primary); font-size: 20px; }
+
+.plan-btn-primary {
+  width: 100%; padding: 16px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none; border-radius: var(--radius-full);
+  font-size: var(--text-label-caps);
+  font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+.plan-btn-primary:hover { opacity: 0.9; }
+.plan-btn-primary:active { transform: scale(0.98); }
+
+.plan-btn-outline {
+  width: 100%; padding: 16px;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-full);
+  font-size: var(--text-label-caps);
+  font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.plan-btn-outline:hover { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+
+.membership-active-banner {
+  max-width: 600px; margin: 0 auto 48px;
+  padding: 20px 24px;
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; gap: 16px;
+  color: var(--color-success);
+}
+
+@media (max-width: 768px) {
+  .membership { padding-left: var(--spacing-margin-mobile); padding-right: var(--spacing-margin-mobile); }
+  .membership-plans { grid-template-columns: 1fr; max-width: 480px; }
+}
