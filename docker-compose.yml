@@ -59,5 +59,19 @@ services:
       - backend
       - frontend
 
+  seed:
+    image: node:20-alpine
+    container_name: atenea-seed
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    environment:
+      DATABASE_URL: postgres://lumiere:lumiere_pass@postgres:5432/lumiere_academy
+    command: sh -c "npm ci && npx ts-node --transpile-only src/seed.ts"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
   postgres_data:
