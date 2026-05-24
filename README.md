@@ -1,13 +1,13 @@
-# Lumière Academy
+# Atenea Courses
 
-Premium hairdressing education platform built with React + TypeScript + Node.js + PostgreSQL.
+Plataforma premium de educación para barberos profesionales. Construida con React + TypeScript + Node.js + PostgreSQL.
 
-## Default Credentials
+## Credenciales por defecto
 
-| Role  | Email                  | Password   |
+| Rol   | Email                  | Contraseña |
 |-------|------------------------|------------|
-| Admin | admin@lumiere.com      | Admin123!  |
-| User  | user@lumiere.com       | User123!   |
+| Admin | admin@atenea.com       | Admin123!  |
+| User  | user@atenea.com        | User123!   |
 
 ## Tech Stack
 
@@ -15,55 +15,53 @@ Premium hairdressing education platform built with React + TypeScript + Node.js 
 - **Backend**: Node.js, Express, TypeScript
 - **Database**: PostgreSQL 16
 - **Server**: Nginx
-- **Auth**: JWT (7-day tokens)
+- **Auth**: JWT (tokens de 7 días)
 
-## Quick Start (Development)
+## Quick Start (Desarrollo local)
 
-### 1. Start PostgreSQL
+### 1. Levantar PostgreSQL con Docker
+
 ```bash
-# With Docker
-docker run -d --name lumiere-db \
-  -e POSTGRES_DB=lumiere_academy \
-  -e POSTGRES_USER=lumiere \
-  -e POSTGRES_PASSWORD=lumiere_pass \
-  -p 5432:5432 \
-  postgres:16-alpine
+docker compose up postgres -d
 ```
 
-### 2. Initialize Database
-```bash
-psql postgres://lumiere:lumiere_pass@localhost:5432/lumiere_academy -f database/schema.sql
-```
+### 2. Inicializar esquema de base de datos
 
-### 3. Seed Database (creates default users + sample courses)
+El esquema se aplica automáticamente cuando postgres arranca (via `docker-entrypoint-initdb.d`).
+
+### 3. Seedear la base de datos (usuarios + cursos de ejemplo)
+
 ```bash
 cd backend
 npm install
 npm run seed
 ```
 
-### 4. Start Backend
+### 4. Levantar el backend
+
 ```bash
 cd backend
-cp ../.env.example .env   # already created
-npm run dev               # runs on http://localhost:3000
+npm run dev   # corre en http://localhost:3000
 ```
 
-### 5. Start Frontend
+### 5. Levantar el frontend
+
 ```bash
 cd frontend
 npm install
-npm run dev               # runs on http://localhost:5173
+npm run dev   # corre en http://localhost:5173
 ```
 
-## Production (Docker Compose)
+## Producción (Docker Compose)
 
 ```bash
-docker-compose up --build
-# Access at http://localhost
+docker compose up --build
+# Acceder en http://localhost
 ```
 
-## Project Structure
+> El servicio `seed` crea automáticamente los usuarios y cursos de ejemplo al primer arranque. Si ya existe una base de datos anterior, corré `docker compose down -v` antes para limpiar los volúmenes.
+
+## Estructura del proyecto
 
 ```
 atenea-courses/
@@ -82,19 +80,19 @@ atenea-courses/
 │   │   ├── contexts/            # AuthContext, ThemeContext
 │   │   ├── services/            # api.ts (Axios)
 │   │   ├── styles/              # variables.css, globals.css
-│   │   └── types/               # TypeScript interfaces
+│   │   └── types/               # Interfaces TypeScript
 │   └── Dockerfile
 ├── backend/                     # Node.js + Express + TypeScript
 │   ├── src/
 │   │   ├── config/              # database, multer
 │   │   ├── controllers/         # auth, courses, admin
-│   │   ├── middleware/          # auth (JWT), error handler
+│   │   ├── middleware/          # auth (JWT)
 │   │   ├── routes/              # auth, courses, admin
 │   │   └── types/
 │   └── Dockerfile
 ├── database/
-│   ├── schema.sql               # Tables + indexes
-│   └── seed.ts                  # Sample data + default users
+│   ├── schema.sql               # Tablas + índices + categorías
+│   └── seed.ts                  # Datos de ejemplo + usuarios por defecto
 ├── nginx/
 │   └── nginx.conf
 └── docker-compose.yml
@@ -102,24 +100,30 @@ atenea-courses/
 
 ## Features
 
-### Student
-- Browse and search courses
-- Filter by category (Cut, Color, Styling, Bridal, Business)
-- Monthly subscription ($49/month) or individual purchase
-- Video player with curriculum sidebar
-- Progress tracking
+### Estudiante
+- Explorar y buscar cursos
+- Filtrar por categoría (Fade, Barba, Corte Clásico, Colorimetría, Negocio)
+- Suscripción mensual ($49/mes) o compra individual
+- Reproductor de video con sidebar de contenido
+- Seguimiento de progreso
 
 ### Admin
-- Dashboard with key stats (users, courses, subscriptions, revenue)
-- Full course CRUD (title, description, instructor, category, price, thumbnail)
-- Lesson management per course (add/edit/delete, video upload)
-- User management with subscription status
-- Publish/draft system for courses
+- Dashboard con estadísticas clave (usuarios, cursos, suscripciones, ingresos)
+- CRUD completo de cursos (título, descripción, instructor, categoría, precio, miniatura)
+- Gestión de lecciones por curso (agregar/editar/eliminar, URL de YouTube)
+- Gestión de usuarios con estado de suscripción
+- Sistema de publicación/borrador para cursos
 
-### Design
-- Light/Dark mode toggle (persisted in localStorage)
+### Protección de video
+- Los URLs de YouTube **nunca se envían** al frontend si el usuario no tiene acceso (verificado en el backend)
+- El embed usa `youtube-nocookie.com` para reducir tracking
+- El admin carga los videos como **No listados** en YouTube — los usuarios no pueden acceder directamente
+
+### Diseño
+- Tema oscuro premium por defecto (toggle a modo claro)
 - Responsive (mobile + desktop)
-- Glass morphism cards
-- Grayscale → color image hover effect
-- Playfair Display (headings) + Inter (body)
-- Material Symbols icons
+- Cards con glassmorphism
+- Efecto hover escala de grises → color en imágenes
+- Playfair Display (títulos) + Montserrat (cuerpo)
+- Color primario dorado `#C9A96E`
+- Íconos Material Symbols
