@@ -11,9 +11,9 @@ async function start() {
     await pool.query('SELECT 1');
     console.log('✅ Database connected');
     app.listen(PORT, () => {
-      console.log(`🚀 Lumière Academy API running on http://localhost:${PORT}`);
-      console.log(`   Admin: admin@lumiere.com / Admin123!`);
-      console.log(`   User:  user@lumiere.com  / User123!`);
+      console.log(`🚀 Atenea Courses API running on http://localhost:${PORT}`);
+      console.log(`   Admin: admin@atenea.com / Admin123!`);
+      console.log(`   User:  user@atenea.com  / User123!`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

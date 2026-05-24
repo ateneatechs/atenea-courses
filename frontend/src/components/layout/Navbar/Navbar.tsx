@@ -50,8 +50,7 @@ const Navbar: React.FC = () => {
           <NavLink to="/" className="navbar-logo">Atenea Courses</NavLink>
           <ul className="navbar-links">
             <li><NavLink to="/explorer" className={({ isActive }) => isActive ? 'active' : ''}>Explorar</NavLink></li>
-            <li><NavLink to="/explorer" className="">Masterclasses</NavLink></li>
-            <li><NavLink to="/explorer" className="">Instructores</NavLink></li>
+            <li><NavLink to="/explorer?filter=masterclass" className={({ isActive }) => isActive ? 'active' : ''}>Masterclasses</NavLink></li>
             <li><NavLink to="/membership" className={({ isActive }) => isActive ? 'active' : ''}>Membresía</NavLink></li>
           </ul>
         </div>

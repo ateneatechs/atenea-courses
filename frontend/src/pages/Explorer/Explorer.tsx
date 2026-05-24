@@ -1,10 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { Course, Category, SortOption } from '../../types';
 import CourseCard from '../../components/courses/CourseCard/CourseCard';
 import './Explorer.css';
 
 const Explorer: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const filterMasterclass = searchParams.get('filter') === 'masterclass';
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -44,9 +48,13 @@ const Explorer: React.FC = () => {
     <div className="explorer">
       {/* Header */}
       <header className="explorer-header">
-        <h1 className="explorer-title">Explorador de Cursos</h1>
+        <h1 className="explorer-title">
+          {filterMasterclass ? 'Masterclasses' : 'Explorador de Cursos'}
+        </h1>
         <p className="explorer-subtitle">
-          Perfecciona tu arte con masterclasses curadas dirigidas por estilistas editoriales de renombre mundial y pioneros de la industria.
+          {filterMasterclass
+            ? 'Los cursos más avanzados de nuestra academia, impartidos por maestros barberos con trayectoria internacional.'
+            : 'Perfeccioná tu técnica con cursos curados dirigidos por maestros barberos profesionales de todo el mundo.'}
         </p>
       </header>
 
@@ -104,11 +112,14 @@ const Explorer: React.FC = () => {
         <div className="course-grid-empty">Cargando masterclasses...</div>
       ) : (
         <div className={`course-grid${fading ? ' fading' : ''}`}>
-          {courses.length === 0 ? (
-            <div className="course-grid-empty">No se encontraron cursos. Intenta con otra búsqueda.</div>
-          ) : (
-            courses.map(course => <CourseCard key={course.id} course={course} />)
-          )}
+          {(() => {
+            const displayed = filterMasterclass
+              ? courses.filter(c => c.badge?.toLowerCase().includes('masterclass'))
+              : courses;
+            return displayed.length === 0
+              ? <div className="course-grid-empty">No se encontraron cursos. Intenta con otra búsqueda.</div>
+              : displayed.map(course => <CourseCard key={course.id} course={course} />);
+          })()}
         </div>
       )}
 

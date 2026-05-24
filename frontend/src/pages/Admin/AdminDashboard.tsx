@@ -376,6 +376,7 @@ const AdminDashboard: React.FC = () => {
                                     <th>Sección</th>
                                     <th>Tipo</th>
                                     <th>Duración</th>
+                                    <th>Video URL</th>
                                     <th>Acciones</th>
                                   </tr></thead>
                                   <tbody>
@@ -386,6 +387,19 @@ const AdminDashboard: React.FC = () => {
                                         <td>{l.section_number}. {l.section_title}</td>
                                         <td style={{ textTransform: 'capitalize' }}>{l.lesson_type}</td>
                                         <td>{l.duration}</td>
+                                        <td>
+                                          {l.video_url ? (
+                                            <span
+                                              title={l.video_url}
+                                              style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#C9A96E', fontSize: 13 }}
+                                            >
+                                              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>smart_display</span>
+                                              Cargado
+                                            </span>
+                                          ) : (
+                                            <span style={{ color: 'var(--color-on-surface-variant)', fontSize: 13 }}>—</span>
+                                          )}
+                                        </td>
                                         <td>
                                           <div className="table-actions">
                                             <button className="action-btn" onClick={() => openLessonForm(c.id, l)}>
