@@ -7,9 +7,9 @@ const Footer: React.FC = () => (
     <div className="footer-main">
       <div className="footer-top">
         <div className="footer-brand">
-          <Link to="/" className="footer-logo">Lumière Academy</Link>
+          <Link to="/" className="footer-logo">Atenea Courses</Link>
           <p className="footer-tagline">
-            El destino global para la educación avanzada en peluquería. Elevando los estándares de la industria a través del dominio y el arte.
+            La plataforma de educación premium para barberos profesionales. Técnica, arte y negocio en un solo lugar.
           </p>
           <div className="footer-socials">
             <button className="footer-social-btn" title="Web">
@@ -27,14 +27,14 @@ const Footer: React.FC = () => (
         <div className="footer-links">
           <div className="footer-col">
             <span className="footer-col-title">Explorar</span>
-            <Link to="/explorer">Colecciones</Link>
+            <Link to="/explorer">Cursos</Link>
             <Link to="/explorer">Instructores</Link>
             <Link to="#">Tarjetas de regalo</Link>
           </div>
           <div className="footer-col">
             <span className="footer-col-title">Academia</span>
             <Link to="#">Sobre nosotros</Link>
-            <Link to="#">Empleo</Link>
+            <Link to="#">Trabaja con nosotros</Link>
             <Link to="#">Prensa</Link>
           </div>
           <div className="footer-col">
@@ -47,11 +47,11 @@ const Footer: React.FC = () => (
       </div>
 
       <div className="footer-bottom">
-        <p className="footer-copy">© {new Date().getFullYear()} Lumière Academy. Todos los derechos reservados.</p>
+        <p className="footer-copy">© {new Date().getFullYear()} Atenea Courses. Todos los derechos reservados.</p>
         <div className="footer-bottom-links">
           <Link to="#">Instagram</Link>
           <Link to="#">YouTube</Link>
-          <Link to="#">Pinterest</Link>
+          <Link to="#">TikTok</Link>
         </div>
       </div>
     </div>

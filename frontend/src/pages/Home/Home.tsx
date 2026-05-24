@@ -5,7 +5,7 @@ import { Course } from '../../types';
 import './Home.css';
 import '../Membership/Membership.css';
 
-const HERO_IMG = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBaDatug_Xt67yZyvGTatFZVGFsK4C1UkyefxxcZ54KMgvYpPJscQAwqCx6g8i29trjVLmEkvlGjIaEYwjraSBzvA3csjBma9k90_sPArna2g4CbrGpjtiLPlKsTmBRpHWTlnb_ti9Hzvlcc84zjlGqi3rCDu1HDenBF29IOYtq9k9-2uv03n5OO6ZyYNY2S13fbmmTkvx4W_MVfCV47M80WUDDyFVZUABwundoju0B8P0T5H8jfbU5bQ_7euKC35L9-tj6d9ZwO3M5';
+const HERO_IMG = 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1600&q=80';
 
 const Home: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -22,20 +22,20 @@ const Home: React.FC = () => {
       {/* ── Hero ── */}
       <section className="hero">
         <div className="hero-bg">
-          <img src={HERO_IMG} alt="Professional hair stylist" />
+          <img src={HERO_IMG} alt="Barbero profesional trabajando" />
           <div className="hero-bg-overlay" />
         </div>
         <div className="hero-content">
-          <span className="hero-eyebrow">Precisión • Arte • Maestría</span>
+          <span className="hero-eyebrow">Técnica • Arte • Negocio</span>
           <h1 className="hero-title">
-            Eleva tu arte con masterclasses de nivel mundial.
+            Lleva tu barbería al siguiente nivel.
           </h1>
           <p className="hero-subtitle">
-            Únete a una comunidad de élite de estilistas. Obtén acceso exclusivo a técnicas de los mejores referentes de la industria y transforma tu carrera profesional.
+            Accedé a masterclasses exclusivas de los mejores barberos del mundo. Técnicas de fade, barba, colorimetría y gestión de negocio para barberos que quieren crecer.
           </p>
           <div className="hero-cta">
             <button className="btn-primary" onClick={() => navigate('/explorer')}>
-              Ver Masterclasses
+              Ver Cursos
             </button>
             <button className="btn-outline" onClick={() => navigate('/membership')}>
               Explorar Membresía
@@ -47,9 +47,9 @@ const Home: React.FC = () => {
       {/* ── Stats ── */}
       <div className="stats">
         {[
-          { number: '200+', label: 'Lecciones en Video' },
-          { number: '42', label: 'Masterclasses' },
-          { number: '15k+', label: 'Estudiantes' },
+          { number: '60+', label: 'Lecciones en Video' },
+          { number: '6', label: 'Cursos Especializados' },
+          { number: '500+', label: 'Barberos Formados' },
           { number: '98%', label: 'Satisfacción' },
         ].map(s => (
           <div key={s.label} className="stat-item">
@@ -108,10 +108,10 @@ const Home: React.FC = () => {
       {/* ── Membership ── */}
       <section className="home-membership">
         <div className="membership-header">
-          <span className="membership-eyebrow">Invierte en ti</span>
-          <h2 className="membership-title">Elige tu camino</h2>
+          <span className="membership-eyebrow">Invertí en tu carrera</span>
+          <h2 className="membership-title">Elegí tu plan</h2>
           <p className="membership-subtitle">
-            Rutas de aprendizaje flexibles diseñadas para tu agenda profesional y tus metas de carrera.
+            Rutas de aprendizaje flexibles diseñadas para barberos que quieren crecer a su propio ritmo.
           </p>
         </div>
         <div className="membership-plans">
@@ -123,7 +123,7 @@ const Home: React.FC = () => {
             </div>
             <h2 className="plan-name">Suscripción Mensual</h2>
             <p className="plan-desc">
-              Acceso ilimitado a toda nuestra biblioteca de masterclasses, recursos y eventos en vivo.
+              Acceso ilimitado a todos los cursos, recursos y contenido nuevo que se agregue cada mes.
             </p>
             <div className="plan-price">
               <span className="plan-price-amount">$49</span>
@@ -131,11 +131,11 @@ const Home: React.FC = () => {
             </div>
             <ul className="plan-features">
               {[
-                '200+ Lecciones en Video',
-                'Sesiones mensuales de preguntas en vivo',
+                'Acceso a todos los cursos',
+                'Nuevos cursos cada mes',
                 'Acceso al foro de la comunidad',
                 'Certificado de finalización',
-                'Nuevos cursos cada mes',
+                'Soporte prioritario',
               ].map(f => (
                 <li key={f} className="plan-feature">
                   <span className="material-symbols-outlined plan-feature-icon" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
@@ -144,7 +144,7 @@ const Home: React.FC = () => {
               ))}
             </ul>
             <button className="plan-btn-primary" onClick={() => navigate('/membership')}>
-              Comenzar prueba de 7 días gratis
+              Comenzar ahora
             </button>
           </div>
 
@@ -156,7 +156,7 @@ const Home: React.FC = () => {
             </div>
             <h2 className="plan-name">Curso Individual</h2>
             <p className="plan-desc">
-              Adquiere un masterclass específico de por vida. Ideal para el desarrollo enfocado de habilidades a tu propio ritmo.
+              Comprá el curso que necesitás y tenés acceso de por vida. Ideal para habilidades específicas.
             </p>
             <div className="plan-price">
               <span className="plan-price-from">Desde</span>
@@ -164,10 +164,10 @@ const Home: React.FC = () => {
             </div>
             <ul className="plan-features">
               {[
-                'Acceso de por vida al curso adquirido',
+                'Acceso de por vida al curso',
                 'Videos en alta definición',
-                'Guías de técnicas descargables',
-                'Retroalimentación privada del curso',
+                'Material complementario',
+                'Acceso desde cualquier dispositivo',
               ].map(f => (
                 <li key={f} className="plan-feature">
                   <span className="material-symbols-outlined plan-feature-icon" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>

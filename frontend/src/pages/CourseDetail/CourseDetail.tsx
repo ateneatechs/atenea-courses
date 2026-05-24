@@ -177,9 +177,9 @@ const CourseDetail: React.FC = () => {
                 <h3 className="objectives-title">Objetivos de aprendizaje</h3>
                 <div className="objective-list">
                   {[
-                    'Domina la técnica profesional con guía paso a paso de expertos de la industria.',
-                    'Comprende los principios fundamentales de cada método para una retención de habilidades duradera.',
-                    'Refina tu trabajo con técnicas de acabado editorial para un resultado pulido y profesional.',
+                    'Dominá la técnica profesional con guía paso a paso de expertos del sector.',
+                    'Comprendé los fundamentos de cada método para que el aprendizaje sea duradero y aplicable.',
+                    'Perfeccioná tu trabajo con técnicas de acabado que marcan la diferencia en el resultado final.',
                   ].map((obj, i) => (
                     <div key={i} className="objective-item">
                       <span className="material-symbols-outlined objective-icon" style={{ fontSize: 22 }}>check_circle</span>
@@ -195,7 +195,7 @@ const CourseDetail: React.FC = () => {
                 <span className="educator-label">Instructor</span>
                 <h4 className="educator-name">{course.instructor_name}</h4>
                 <p className="educator-bio">
-                  Estilista premiada con más de 15 años de experiencia editorial y de sesión, especializada en técnica de precisión.
+                  Barbero premiado con más de 10 años de experiencia en competencias internacionales, especializado en técnica de precisión y formación profesional.
                 </p>
                 <button className="educator-link">Ver perfil</button>
               </div>

@@ -47,7 +47,7 @@ const Navbar: React.FC = () => {
     <>
       <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
         <div className="navbar-left">
-          <NavLink to="/" className="navbar-logo">Lumière Academy</NavLink>
+          <NavLink to="/" className="navbar-logo">Atenea Courses</NavLink>
           <ul className="navbar-links">
             <li><NavLink to="/explorer" className={({ isActive }) => isActive ? 'active' : ''}>Explorar</NavLink></li>
             <li><NavLink to="/explorer" className="">Masterclasses</NavLink></li>

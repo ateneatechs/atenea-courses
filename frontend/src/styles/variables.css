@@ -2,34 +2,34 @@
    LIGHT MODE DESIGN TOKENS
    =========================== */
 :root {
-  --color-primary: #775a19;
-  --color-primary-container: #c5a059;
-  --color-primary-fixed: #ffdea5;
-  --color-primary-fixed-dim: #e9c176;
+  --color-primary: #8B6914;
+  --color-primary-container: #C9A96E;
+  --color-primary-fixed: #F0D9B0;
+  --color-primary-fixed-dim: #D4B87A;
   --color-on-primary: #ffffff;
-  --color-on-primary-container: #4e3700;
+  --color-on-primary-container: #3E2A00;
 
-  --color-secondary: #8c4b55;
-  --color-secondary-container: #feaab6;
+  --color-secondary: #6B5B45;
+  --color-secondary-container: #C8B89A;
   --color-on-secondary: #ffffff;
-  --color-on-secondary-container: #7a3c46;
+  --color-on-secondary-container: #3A2E1E;
 
-  --color-background: #fcf9f8;
-  --color-on-background: #1c1b1b;
+  --color-background: #FAF8F4;
+  --color-on-background: #1A1A1A;
 
-  --color-surface: #fcf9f8;
-  --color-surface-dim: #dcd9d9;
-  --color-surface-variant: #e5e2e1;
-  --color-surface-container: #f0edec;
-  --color-surface-container-low: #f6f3f2;
-  --color-surface-container-high: #ebe7e7;
-  --color-surface-container-highest: #e5e2e1;
-  --color-surface-container-lowest: #ffffff;
-  --color-on-surface: #1c1b1b;
-  --color-on-surface-variant: #4e4639;
+  --color-surface: #FAF8F4;
+  --color-surface-dim: #DDD9D1;
+  --color-surface-variant: #E8E3D8;
+  --color-surface-container: #F0EDE5;
+  --color-surface-container-low: #F6F3EE;
+  --color-surface-container-high: #E8E3D8;
+  --color-surface-container-highest: #E0DBD0;
+  --color-surface-container-lowest: #FFFFFF;
+  --color-on-surface: #1A1A1A;
+  --color-on-surface-variant: #4A4035;
 
-  --color-outline: #7f7667;
-  --color-outline-variant: #d1c5b4;
+  --color-outline: #7A6E5E;
+  --color-outline-variant: #CEC4B0;
 
   --color-error: #ba1a1a;
   --color-error-container: #ffdad6;
@@ -55,7 +55,7 @@
 
   /* Font Families */
   --font-display: 'Playfair Display', Georgia, serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Font Sizes */
   --text-display-lg: 64px;
@@ -79,47 +79,47 @@
   --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08);
   --shadow-xl: 0 16px 64px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.10);
-  --shadow-glow: 0 0 40px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --shadow-glow: 0 0 40px rgba(201, 169, 110, 0.25);
 
-  /* Glass — Liquid Glass style */
+  /* Glass */
   --glass-bg: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(119, 90, 25, 0.12);
+  --glass-border: rgba(139, 105, 20, 0.12);
   --glass-saturate: 180%;
-  --nav-bg: rgba(252, 249, 248, 0.88);
+  --nav-bg: rgba(250, 248, 244, 0.92);
 }
 
 /* ===========================
    DARK MODE DESIGN TOKENS
    =========================== */
 html.dark {
-  --color-primary: #f2ca50;
-  --color-primary-container: #d4af37;
-  --color-primary-fixed: #ffe088;
-  --color-primary-fixed-dim: #e9c349;
-  --color-on-primary: #3c2f00;
-  --color-on-primary-container: #554300;
+  --color-primary: #C9A96E;
+  --color-primary-container: #A07A40;
+  --color-primary-fixed: #E8D0A0;
+  --color-primary-fixed-dim: #D4B87A;
+  --color-on-primary: #1A0F00;
+  --color-on-primary-container: #F0E0C0;
 
-  --color-secondary: #c8c6c5;
-  --color-secondary-container: #474746;
-  --color-on-secondary: #303030;
-  --color-on-secondary-container: #b7b5b4;
+  --color-secondary: #C0B8A8;
+  --color-secondary-container: #3A3428;
+  --color-on-secondary: #1A1610;
+  --color-on-secondary-container: #B0A890;
 
-  --color-background: #131313;
-  --color-on-background: #e5e2e1;
+  --color-background: #0A0A0A;
+  --color-on-background: #F0EDE8;
 
-  --color-surface: #131313;
-  --color-surface-dim: #131313;
-  --color-surface-variant: #353534;
-  --color-surface-container: #201f1f;
-  --color-surface-container-low: #1c1b1b;
-  --color-surface-container-high: #2a2a2a;
-  --color-surface-container-highest: #353534;
-  --color-surface-container-lowest: #0e0e0e;
-  --color-on-surface: #e5e2e1;
-  --color-on-surface-variant: #d0c5af;
+  --color-surface: #0A0A0A;
+  --color-surface-dim: #0A0A0A;
+  --color-surface-variant: #2A2620;
+  --color-surface-container: #141210;
+  --color-surface-container-low: #111008;
+  --color-surface-container-high: #201E18;
+  --color-surface-container-highest: #2A2620;
+  --color-surface-container-lowest: #050404;
+  --color-on-surface: #F0EDE8;
+  --color-on-surface-variant: #C8B898;
 
-  --color-outline: #99907c;
-  --color-outline-variant: #4d4635;
+  --color-outline: #8A7A5A;
+  --color-outline-variant: #3A3020;
 
   --color-error: #ffb4ab;
   --color-error-container: #93000a;
@@ -128,12 +128,13 @@ html.dark {
   --color-success: #7ddb58;
   --color-success-container: #1a4407;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-  --shadow-xl: 0 16px 64px rgba(0,0,0,0.6);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+  --shadow-xl: 0 16px 64px rgba(0,0,0,0.7);
+  --shadow-glow: 0 0 40px rgba(201, 169, 110, 0.18);
 
-  --glass-bg: rgba(28, 27, 27, 0.88);
-  --glass-border: rgba(242, 202, 80, 0.14);
-  --nav-bg: rgba(14, 14, 14, 0.92);
+  --glass-bg: rgba(20, 18, 16, 0.90);
+  --glass-border: rgba(201, 169, 110, 0.18);
+  --nav-bg: rgba(5, 4, 4, 0.95);
 }
