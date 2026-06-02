@@ -2,7 +2,7 @@
    LIGHT MODE DESIGN TOKENS
    =========================== */
 :root {
-  --color-primary: #8B6914;
+  --color-primary: #7A5C0A;
   --color-primary-container: #C9A96E;
   --color-primary-fixed: #F0D9B0;
   --color-primary-fixed-dim: #D4B87A;
@@ -14,14 +14,14 @@
   --color-on-secondary: #ffffff;
   --color-on-secondary-container: #3A2E1E;
 
-  --color-background: #FAF8F4;
+  --color-background: #FFFFFF;
   --color-on-background: #1A1A1A;
 
-  --color-surface: #FAF8F4;
+  --color-surface: #FAFAFA;
   --color-surface-dim: #DDD9D1;
   --color-surface-variant: #E8E3D8;
-  --color-surface-container: #F0EDE5;
-  --color-surface-container-low: #F6F3EE;
+  --color-surface-container: #F5F0EA;
+  --color-surface-container-low: #FDFBF8;
   --color-surface-container-high: #E8E3D8;
   --color-surface-container-highest: #E0DBD0;
   --color-surface-container-lowest: #FFFFFF;
@@ -82,10 +82,10 @@
   --shadow-glow: 0 0 40px rgba(201, 169, 110, 0.25);
 
   /* Glass */
-  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-bg: rgba(255, 255, 255, 0.92);
   --glass-border: rgba(139, 105, 20, 0.12);
   --glass-saturate: 180%;
-  --nav-bg: rgba(250, 248, 244, 0.92);
+  --nav-bg: rgba(255, 255, 255, 0.95);
 }
 
 /* ===========================
