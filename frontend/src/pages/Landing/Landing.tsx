@@ -1,66 +1,79 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+import React from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
+import './Landing.css';
 
-interface Tenant {
-  id: string;
-  slug: string;
-  name: string;
-  course_count: number;
-  user_count: number;
-}
+const FEATURES = [
+  { icon: 'palette', title: 'Marca propia', desc: 'Logo, nombre y dominio exclusivo para tu academia.' },
+  { icon: 'play_circle', title: 'Cursos ilimitados', desc: 'Subí videos, quizzes y recursos sin límite de contenido.' },
+  { icon: 'group', title: 'Gestión de alumnos', desc: 'Panel de admin con usuarios, suscripciones e ingresos.' },
+  { icon: 'workspace_premium', title: 'Membresías y ventas', desc: 'Vendé acceso mensual o por curso individualmente.' },
+  { icon: 'smartphone', title: 'Optimizado para móvil', desc: 'Tus alumnos aprenden desde cualquier dispositivo.' },
+  { icon: 'lock', title: 'Contenido protegido', desc: 'Solo alumnos con acceso pueden ver tus videos.' },
+];
 
 const Landing: React.FC = () => {
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    api.get<Tenant[]>('/super-admin/tenants').catch(() => {
-      setTenants([{ id: '1', slug: 'naza-barber', name: 'Naza Barber', course_count: 0, user_count: 0 }]);
-    }).then(r => {
-      if (r) setTenants(r.data);
-    });
-  }, []);
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', background: 'var(--color-background)' }}>
-      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-headline-xl)', color: 'var(--color-primary)', marginBottom: 8 }}>
-        Atenea Courses
-      </h1>
-      <p style={{ color: 'var(--color-on-surface-variant)', marginBottom: 48, fontSize: 'var(--text-body-lg)' }}>
-        Plataforma de academias online
-      </p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, justifyContent: 'center' }}>
-        {tenants.map(t => (
-          <div
-            key={t.id}
-            onClick={() => navigate(`/${t.slug}`)}
-            style={{
-              cursor: 'pointer',
-              padding: '32px 40px',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--color-outline-variant)',
-              background: 'var(--color-surface-container-low)',
-              textAlign: 'center',
-              minWidth: 220,
-              transition: 'transform 200ms, box-shadow 200ms',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
-              (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-md)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLDivElement).style.transform = '';
-              (e.currentTarget as HTMLDivElement).style.boxShadow = '';
-            }}
-          >
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-headline-sm)', color: 'var(--color-on-surface)', marginBottom: 8 }}>{t.name}</div>
-            <div style={{ fontSize: 'var(--text-label-caps)', color: 'var(--color-on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {t.course_count} cursos
+    <div className="landing">
+      {/* Nav */}
+      <nav className="landing-nav">
+        <span className="landing-nav-logo">Atenea Courses</span>
+        <button className="landing-nav-theme" onClick={toggleTheme} title="Cambiar tema">
+          <span className="material-symbols-outlined">
+            {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+          </span>
+        </button>
+      </nav>
+
+      {/* Hero */}
+      <section className="landing-hero">
+        <p className="landing-eyebrow">Plataforma SaaS para academias</p>
+        <h1 className="landing-title">
+          Tu academia online,<br />tu marca, tu dominio.
+        </h1>
+        <p className="landing-subtitle">
+          Creamos la plataforma para que vos te enfoques en enseñar. Subí tus cursos, gestioná tus alumnos y cobrá — todo desde un solo lugar con tu nombre.
+        </p>
+        <a
+          className="landing-cta"
+          href="mailto:hola@atenea-courses.com?subject=Quiero%20mi%20academia"
+        >
+          Quiero mi academia
+        </a>
+      </section>
+
+      {/* Features */}
+      <section className="landing-features">
+        <h2 className="landing-features-title">Todo lo que necesitás</h2>
+        <div className="landing-features-grid">
+          {FEATURES.map(f => (
+            <div key={f.icon} className="landing-feature-card">
+              <span className="material-symbols-outlined landing-feature-icon" style={{ fontVariationSettings: "'FILL' 1" }}>
+                {f.icon}
+              </span>
+              <h3 className="landing-feature-name">{f.title}</h3>
+              <p className="landing-feature-desc">{f.desc}</p>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA bottom */}
+      <section className="landing-bottom-cta">
+        <h2 className="landing-bottom-title">¿Listo para lanzar tu academia?</h2>
+        <p className="landing-bottom-sub">Hablemos. Te tenemos operativo en menos de 48 horas.</p>
+        <a
+          className="landing-cta"
+          href="mailto:hola@atenea-courses.com?subject=Quiero%20mi%20academia"
+        >
+          Contactanos
+        </a>
+      </section>
+
+      <footer className="landing-footer">
+        <span>© {new Date().getFullYear()} Atenea Courses</span>
+      </footer>
     </div>
   );
 };
