@@ -6,7 +6,7 @@ import path from 'path';
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://lumiere:lumiere_pass@localhost:5433/lumiere_academy',
+  connectionString: process.env.DATABASE_URL || 'postgres://lumiere:lumiere_pass@localhost:5432/lumiere_academy',
 });
 
 async function seed() {
