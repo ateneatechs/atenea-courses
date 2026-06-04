@@ -208,7 +208,13 @@ export const getLessonById = async (req: Request, res: Response): Promise<void> 
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    const lessonResult = await query('SELECT * FROM lessons WHERE id = $1', [id]);
+    // JOIN courses to enforce tenant isolation — prevents cross-tenant lesson access
+    const lessonResult = await query(
+      `SELECT l.* FROM lessons l
+       JOIN courses c ON c.id = l.course_id
+       WHERE l.id = $1 AND c.tenant_id = $2`,
+      [id, req.tenantId!]
+    );
     if (lessonResult.rows.length === 0) {
       res.status(404).json({ message: 'Lesson not found' });
       return;
@@ -240,9 +246,22 @@ export const updateLessonProgress = async (req: Request, res: Response): Promise
     const { completed, progressSeconds } = req.body;
     const userId = req.user!.userId;
 
-    const lessonResult = await query('SELECT course_id FROM lessons WHERE id = $1', [id]);
+    // JOIN courses to enforce tenant isolation
+    const lessonResult = await query(
+      `SELECT l.course_id FROM lessons l
+       JOIN courses c ON c.id = l.course_id
+       WHERE l.id = $1 AND c.tenant_id = $2`,
+      [id, req.tenantId!]
+    );
     if (lessonResult.rows.length === 0) {
       res.status(404).json({ message: 'Lesson not found' });
+      return;
+    }
+
+    // Verify user has access to this course before writing progress
+    const hasAccess = await checkAccess(userId, lessonResult.rows[0].course_id, req.tenantId!, req.user!.role);
+    if (!hasAccess) {
+      res.status(403).json({ message: 'Access denied.' });
       return;
     }
 

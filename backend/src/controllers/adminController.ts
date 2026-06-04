@@ -144,6 +144,16 @@ export const createLesson = async (req: Request, res: Response): Promise<void> =
       order_index, section_number, section_title, lesson_type, video_url: bodyUrl,
     } = req.body;
 
+    // Verify course belongs to this tenant before creating lesson
+    const courseCheck = await query(
+      'SELECT id FROM courses WHERE id = $1 AND tenant_id = $2',
+      [course_id, req.tenantId!]
+    );
+    if (courseCheck.rows.length === 0) {
+      res.status(404).json({ message: 'Course not found' });
+      return;
+    }
+
     const video_url = req.file ? `/uploads/videos/${req.file.filename}` : (bodyUrl || '');
 
     const result = await query(
@@ -178,6 +188,7 @@ export const updateLesson = async (req: Request, res: Response): Promise<void> =
 
     const video_url = req.file ? `/uploads/videos/${req.file.filename}` : bodyUrl;
 
+    // JOIN courses to enforce tenant isolation on update
     const result = await query(
       `UPDATE lessons SET
         title = COALESCE($1, title),
@@ -190,11 +201,12 @@ export const updateLesson = async (req: Request, res: Response): Promise<void> =
         lesson_type = COALESCE($8, lesson_type),
         updated_at = NOW()
        WHERE id = $9
+         AND course_id IN (SELECT id FROM courses WHERE tenant_id = $10)
        RETURNING *`,
       [title, description, video_url, duration,
         order_index ? parseInt(order_index) : null,
         section_number ? parseInt(section_number) : null,
-        section_title, lesson_type, id]
+        section_title, lesson_type, id, req.tenantId!]
     );
     if (result.rows.length === 0) {
       res.status(404).json({ message: 'Lesson not found' });
@@ -210,7 +222,13 @@ export const updateLesson = async (req: Request, res: Response): Promise<void> =
 export const deleteLesson = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const lessonResult = await query('SELECT course_id FROM lessons WHERE id = $1', [id]);
+    // JOIN courses to enforce tenant isolation on delete
+    const lessonResult = await query(
+      `SELECT l.course_id FROM lessons l
+       JOIN courses c ON c.id = l.course_id
+       WHERE l.id = $1 AND c.tenant_id = $2`,
+      [id, req.tenantId!]
+    );
     if (lessonResult.rows.length === 0) {
       res.status(404).json({ message: 'Lesson not found' });
       return;
