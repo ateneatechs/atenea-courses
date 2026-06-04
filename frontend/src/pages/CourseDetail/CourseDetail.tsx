@@ -3,14 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { Course, Lesson, CourseTab } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLessonProgress } from './useLessonProgress';
+import YouTubePlayer from './YouTubePlayer';
 import './CourseDetail.css';
-
-const getYouTubeEmbedUrl = (url: string): string => {
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-  if (!match) return '';
-  const id = match[1];
-  return `https://www.youtube-nocookie.com/embed/${id}?modestbranding=1&rel=0&iv_load_policy=3&color=white`;
-};
 
 const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -59,7 +54,8 @@ const CourseDetail: React.FC = () => {
     return acc;
   }, {});
 
-  const completedCount = 0;
+  const { completedIds, progressMap, saveProgress, markComplete } = useLessonProgress(lessons);
+  const completedCount = completedIds.size;
   const progressPct = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
 
   return (
@@ -79,18 +75,16 @@ const CourseDetail: React.FC = () => {
           {/* Video Player */}
           <div className="video-player-wrap">
             {hasAccess && activeLesson?.video_url ? (
-              <div className="yt-embed-wrap">
-                <iframe
-                  key={activeLesson.id}
-                  src={getYouTubeEmbedUrl(activeLesson.video_url)}
-                  className="yt-iframe"
-                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={activeLesson.title}
-                />
-                <div className="yt-overlay-title" />
-                <div className="yt-overlay-logo" />
-              </div>
+              <YouTubePlayer
+                key={activeLesson.id}
+                videoUrl={activeLesson.video_url}
+                thumbnailUrl={course.thumbnail_url}
+                title={activeLesson.title}
+                startSeconds={progressMap.get(activeLesson.id) ?? 0}
+                lessonId={activeLesson.id}
+                onProgress={(secs) => saveProgress(activeLesson.id, secs)}
+                onComplete={() => markComplete(activeLesson.id)}
+              />
             ) : hasAccess ? (
               <>
                 {course.thumbnail_url && (
@@ -281,20 +275,31 @@ const CourseDetail: React.FC = () => {
               </div>
               {sec.lessons.map(lesson => {
                 const isPlaying = activeLesson?.id === lesson.id;
+                const isCompleted = completedIds.has(lesson.id);
                 const lessonTypeIcon = lesson.lesson_type === 'quiz'
                   ? 'quiz'
                   : lesson.lesson_type === 'resource'
                     ? 'description'
-                    : isPlaying ? 'play_circle' : 'check_circle';
+                    : isPlaying
+                      ? 'play_circle'
+                      : isCompleted
+                        ? 'check_circle'
+                        : 'radio_button_unchecked';
 
                 return (
                   <div
                     key={lesson.id}
-                    className={`lesson-item${isPlaying ? ' playing' : ''}`}
+                    className={`lesson-item${isPlaying ? ' playing' : ''}${isCompleted ? ' completed' : ''}`}
                     onClick={() => setActiveLesson(lesson)}
                   >
-                    <span className={`material-symbols-outlined lesson-icon${isPlaying ? '' : ' done'}`}
-                      style={{ fontSize: 18, fontVariationSettings: isPlaying ? "'FILL' 0" : "'FILL' 1" }}>
+                    <span
+                      className="material-symbols-outlined lesson-icon"
+                      style={{
+                        fontSize: 18,
+                        fontVariationSettings: (isPlaying || isCompleted) ? "'FILL' 1" : "'FILL' 0",
+                        color: isCompleted && !isPlaying ? 'var(--color-success)' : undefined,
+                      }}
+                    >
                       {lessonTypeIcon}
                     </span>
                     <div className="lesson-info">
