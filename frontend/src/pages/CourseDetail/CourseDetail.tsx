@@ -17,6 +17,9 @@ const CourseDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<CourseTab>('overview');
   const [loading, setLoading] = useState(true);
 
+  // Must be before any early returns — Rules of Hooks
+  const { completedIds, progressMap, saveProgress, markComplete } = useLessonProgress(course?.lessons || []);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -54,7 +57,6 @@ const CourseDetail: React.FC = () => {
     return acc;
   }, {});
 
-  const { completedIds, progressMap, saveProgress, markComplete } = useLessonProgress(lessons);
   const completedCount = completedIds.size;
   const progressPct = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
 
