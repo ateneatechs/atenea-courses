@@ -67,20 +67,36 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const lessonsResult = await query(
-      'SELECT * FROM lessons WHERE course_id = $1 ORDER BY section_number, order_index',
-      [id]
-    );
-
     let hasAccess = false;
     if (req.user) {
       hasAccess = await checkAccess(req.user.userId, id, req.tenantId!, req.user.role);
     }
 
-    const lessons = lessonsResult.rows.map(l => ({
-      ...l,
-      video_url: hasAccess ? l.video_url : null,
-    }));
+    const lessonsQuery = req.user
+      ? `SELECT l.*,
+           lp.completed    AS lp_completed,
+           lp.progress_seconds AS lp_seconds
+         FROM lessons l
+         LEFT JOIN lesson_progress lp
+           ON lp.lesson_id = l.id AND lp.user_id = $2
+         WHERE l.course_id = $1
+         ORDER BY l.section_number, l.order_index`
+      : 'SELECT * FROM lessons WHERE course_id = $1 ORDER BY section_number, order_index';
+
+    const lessonsParams = req.user ? [id, req.user.userId] : [id];
+    const lessonsResult = await query(lessonsQuery, lessonsParams);
+
+    const lessons = lessonsResult.rows.map(l => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { lp_completed, lp_seconds, ...lessonFields } = l;
+      return {
+        ...lessonFields,
+        video_url: hasAccess ? l.video_url : null,
+        progress: req.user
+          ? { completed: lp_completed ?? false, progress_seconds: lp_seconds ?? 0 }
+          : null,
+      };
+    });
 
     res.json({ ...courseResult.rows[0], lessons, hasAccess });
   } catch (error) {
