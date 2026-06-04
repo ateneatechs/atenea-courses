@@ -1,10 +1,5 @@
 import axios from 'axios';
-
-const getTenantSlug = (): string | null => {
-  const parts = window.location.pathname.split('/').filter(Boolean);
-  if (!parts[0] || parts[0] === 'super-admin') return null;
-  return parts[0];
-};
+import { getTenantSlug } from '../utils/tenant';
 
 const api = axios.create({ baseURL: '/api' });
 
