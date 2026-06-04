@@ -166,6 +166,12 @@
   margin: 4px 0;
 }
 
+.navbar-logo-img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
 @media (max-width: 768px) {
   .navbar { padding: 0 var(--spacing-margin-mobile); }
   .navbar-links { display: none; }

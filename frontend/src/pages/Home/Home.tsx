@@ -34,10 +34,10 @@ const Home: React.FC = () => {
             Accedé a masterclasses exclusivas de los mejores barberos del mundo. Técnicas de fade, barba, colorimetría y gestión de negocio para barberos que quieren crecer.
           </p>
           <div className="hero-cta">
-            <button className="btn-primary" onClick={() => navigate('/explorer')}>
+            <button className="btn-primary" onClick={() => navigate('explorer')}>
               Ver Cursos
             </button>
-            <button className="btn-outline" onClick={() => navigate('/membership')}>
+            <button className="btn-outline" onClick={() => navigate('membership')}>
               Explorar Membresía
             </button>
           </div>
@@ -67,12 +67,12 @@ const Home: React.FC = () => {
               <span className="section-eyebrow">Currículo Curado</span>
               <h2 className="section-title">Domina los Fundamentos</h2>
             </div>
-            <Link to="/explorer" className="section-link">Ver todos los cursos</Link>
+            <Link to="explorer" className="section-link">Ver todos los cursos</Link>
           </div>
 
           <div className="featured-grid">
             {large && (
-              <div className="featured-large" onClick={() => navigate(`/courses/${large.id}`)}>
+              <div className="featured-large" onClick={() => navigate(`courses/${large.id}`)}>
                 <div className="featured-large-image">
                   <img src={large.thumbnail_url} alt={large.title} />
                   <div className="featured-large-overlay" />
@@ -89,7 +89,7 @@ const Home: React.FC = () => {
 
             <div className="featured-secondary">
               {rest.map(c => (
-                <div key={c.id} className="secondary-card" onClick={() => navigate(`/courses/${c.id}`)}>
+                <div key={c.id} className="secondary-card" onClick={() => navigate(`courses/${c.id}`)}>
                   <div className="secondary-card-image">
                     <img src={c.thumbnail_url} alt={c.title} />
                     <div className="secondary-card-overlay" />
@@ -143,7 +143,7 @@ const Home: React.FC = () => {
                 </li>
               ))}
             </ul>
-            <button className="plan-btn-primary" onClick={() => navigate('/membership')}>
+            <button className="plan-btn-primary" onClick={() => navigate('membership')}>
               Comenzar ahora
             </button>
           </div>
@@ -175,7 +175,7 @@ const Home: React.FC = () => {
                 </li>
               ))}
             </ul>
-            <button className="plan-btn-outline" onClick={() => navigate('/explorer')}>
+            <button className="plan-btn-outline" onClick={() => navigate('explorer')}>
               Ver cursos
             </button>
           </div>

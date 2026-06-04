@@ -1,7 +1,94 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 import { Course, Lesson, AdminStats, Category, AdminTab } from '../../types';
+import { useTenant } from '../../contexts/TenantContext';
 import './AdminDashboard.css';
+
+const BrandingTab: React.FC = () => {
+  const { logoUrl, tenantName, refreshSettings } = useTenant();
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
+  const handleSave = async () => {
+    if (!file) return;
+    setSaving(true);
+    setSuccess(false);
+    try {
+      const form = new FormData();
+      form.append('logo', file);
+      await api.post('/settings/logo', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await refreshSettings();
+      setSuccess(true);
+      setFile(null);
+      setPreview(null);
+    } catch {
+      alert('Error al subir el logo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-headline-sm)', color: 'var(--color-on-surface)', marginBottom: 8 }}>
+          Logo de la academia
+        </h3>
+        <p style={{ color: 'var(--color-on-surface-variant)', fontSize: 'var(--text-body-md)' }}>
+          El logo aparece en la barra de navegación. Formatos: PNG, JPG, SVG. Máx. 5 MB.
+        </p>
+      </div>
+
+      {(preview || logoUrl) && (
+        <div style={{ padding: 16, background: 'var(--color-surface-container)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src={preview || logoUrl!} alt={tenantName} style={{ height: 48, objectFit: 'contain' }} />
+        </div>
+      )}
+
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <span style={{ fontSize: 'var(--text-label-caps)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-primary)' }}>
+          Subir imagen
+        </span>
+        <input type="file" accept="image/*" onChange={handleFile} />
+      </label>
+
+      {file && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            padding: '12px 28px',
+            background: 'var(--color-primary)',
+            color: 'var(--color-on-primary)',
+            border: 'none',
+            borderRadius: 'var(--radius-full)',
+            fontWeight: 700,
+            cursor: saving ? 'not-allowed' : 'pointer',
+            opacity: saving ? 0.7 : 1,
+            alignSelf: 'flex-start',
+          }}
+        >
+          {saving ? 'Guardando...' : 'Guardar logo'}
+        </button>
+      )}
+
+      {success && (
+        <p style={{ color: 'var(--color-success)', fontWeight: 600 }}>
+          Logo actualizado correctamente.
+        </p>
+      )}
+    </div>
+  );
+};
 
 interface AdminUser {
   id: string; email: string; name: string; role: string;
@@ -191,6 +278,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'overview', icon: 'dashboard', label: 'Resumen' },
     { id: 'courses', icon: 'play_circle', label: 'Cursos' },
     { id: 'users', icon: 'group', label: 'Usuarios' },
+    { id: 'branding', icon: 'palette', label: 'Personalización' },
   ];
 
   return (
@@ -503,6 +591,15 @@ const AdminDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </>
+        )}
+
+        {/* ── BRANDING ── */}
+        {tab === 'branding' && (
+          <>
+            <h1 className="admin-page-title">Personalización</h1>
+            <p className="admin-page-subtitle">Configura la identidad visual de tu academia.</p>
+            <BrandingTab />
           </>
         )}
       </main>

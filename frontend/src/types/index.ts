@@ -2,10 +2,11 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'super_admin';
   avatar_url?: string;
   created_at: string;
   subscription?: Subscription | null;
+  has_active_subscription?: boolean;
 }
 
 export interface Course {
@@ -28,6 +29,7 @@ export interface Course {
   updated_at: string;
   lessons?: Lesson[];
   hasAccess?: boolean;
+  completed_lesson_ids?: string[];
 }
 
 export interface Lesson {
@@ -78,5 +80,5 @@ export interface AuthResponse {
 }
 
 export type SortOption = 'newest' | 'popular' | 'price-desc';
-export type AdminTab = 'overview' | 'courses' | 'users';
+export type AdminTab = 'overview' | 'courses' | 'users' | 'branding';
 export type CourseTab = 'overview' | 'resources' | 'discussion';

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useTenant } from '../../../contexts/TenantContext';
 import LoginModal from '../../auth/LoginModal/LoginModal';
 import RegisterModal from '../../auth/RegisterModal/RegisterModal';
 import './Navbar.css';
@@ -9,7 +10,10 @@ import './Navbar.css';
 const Navbar: React.FC = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { tenantSlug, tenantName, logoUrl } = useTenant();
   const navigate = useNavigate();
+  const { tenantSlug: paramSlug } = useParams<{ tenantSlug: string }>();
+  const slug = paramSlug || tenantSlug;
 
   const [scrolled, setScrolled] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -36,7 +40,7 @@ const Navbar: React.FC = () => {
   const handleLogout = () => {
     logout();
     setShowDropdown(false);
-    navigate('/');
+    navigate(`/${slug}`);
   };
 
   const initials = user?.name
@@ -47,11 +51,14 @@ const Navbar: React.FC = () => {
     <>
       <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
         <div className="navbar-left">
-          <NavLink to="/" className="navbar-logo">Atenea Courses</NavLink>
+          {logoUrl
+            ? <NavLink to={`/${slug}`}><img src={logoUrl} alt={tenantName} className="navbar-logo-img" /></NavLink>
+            : <NavLink to={`/${slug}`} className="navbar-logo">{tenantName}</NavLink>
+          }
           <ul className="navbar-links">
-            <li><NavLink to="/explorer" className={({ isActive }) => isActive ? 'active' : ''}>Explorar</NavLink></li>
-            <li><NavLink to="/explorer?filter=masterclass" className={({ isActive }) => isActive ? 'active' : ''}>Masterclasses</NavLink></li>
-            <li><NavLink to="/membership" className={({ isActive }) => isActive ? 'active' : ''}>Membresía</NavLink></li>
+            <li><NavLink to={`/${slug}/explorer`} className={({ isActive }) => isActive ? 'active' : ''}>Explorar</NavLink></li>
+            <li><NavLink to={`/${slug}/explorer?filter=masterclass`} className={({ isActive }) => isActive ? 'active' : ''}>Masterclasses</NavLink></li>
+            <li><NavLink to={`/${slug}/membership`} className={({ isActive }) => isActive ? 'active' : ''}>Membresía</NavLink></li>
           </ul>
         </div>
 
@@ -82,14 +89,14 @@ const Navbar: React.FC = () => {
                   {isAdmin && (
                     <button
                       className="user-dropdown-item"
-                      onClick={() => { navigate('/admin'); setShowDropdown(false); }}
+                      onClick={() => { navigate(`/${slug}/admin`); setShowDropdown(false); }}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>admin_panel_settings</span>
                       Panel de Admin
                     </button>
                   )}
                   <NavLink
-                    to="/membership"
+                    to={`/${slug}/membership`}
                     className="user-dropdown-item"
                     onClick={() => setShowDropdown(false)}
                   >

@@ -1,10 +1,20 @@
 import axios from 'axios';
 
+const getTenantSlug = (): string | null => {
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  if (!parts[0] || parts[0] === 'super-admin') return null;
+  return parts[0];
+};
+
 const api = axios.create({ baseURL: '/api' });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('lumiere-token');
   if (token) config.headers['Authorization'] = `Bearer ${token}`;
+
+  const slug = getTenantSlug();
+  if (slug) config.headers['X-Tenant-Slug'] = slug;
+
   return config;
 });
 
