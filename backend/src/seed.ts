@@ -6,7 +6,7 @@ import path from 'path';
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://lumiere:lumiere_pass@localhost:5432/lumiere_academy',
+  connectionString: process.env.DATABASE_URL || 'postgres://lumiere:lumiere_pass@localhost:5433/lumiere_academy',
 });
 
 async function seed() {
@@ -14,30 +14,33 @@ async function seed() {
   try {
     console.log('Seeding database...');
 
+    const tenantResult = await client.query("SELECT id FROM tenants WHERE slug = 'naza-barber'");
+    const tenantId = tenantResult.rows[0]?.id;
+
     const adminHash = await bcrypt.hash('Admin123!', 12);
     const userHash = await bcrypt.hash('User123!', 12);
 
     await client.query(`
-      INSERT INTO users (email, password_hash, name, role) VALUES
-        ('admin@atenea.com', $1, 'Atenea Admin', 'admin'),
-        ('user@atenea.com', $2, 'Usuario Demo', 'user')
+      INSERT INTO users (email, password_hash, name, role, tenant_id) VALUES
+        ('admin@atenea.com', $1, 'Atenea Admin', 'admin', $3),
+        ('user@atenea.com', $2, 'Usuario Demo', 'user', $3)
       ON CONFLICT (email) DO NOTHING
-    `, [adminHash, userHash]);
+    `, [adminHash, userHash, tenantId]);
 
     const catResult = await client.query('SELECT id, slug FROM categories');
     const cats: Record<string, string> = {};
     catResult.rows.forEach((r: { slug: string; id: string }) => { cats[r.slug] = r.id; });
 
     await client.query(`
-      INSERT INTO courses (title, description, instructor_name, thumbnail_url, price, category_id, badge, total_lessons, total_duration, is_membership_exclusive, is_published)
+      INSERT INTO courses (title, description, instructor_name, thumbnail_url, price, category_id, badge, total_lessons, total_duration, is_membership_exclusive, is_published, tenant_id)
       VALUES
-        ('El Arte del Fade Perfecto', 'Domina todas las variaciones del fade desde cero hasta el nivel más avanzado. Técnicas de transición suave, skin fade y high fade explicadas paso a paso por un maestro barbero con más de 10 años de experiencia en competencias internacionales.', 'Marcos Delgado', 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=800&q=80', 199.00, $1, 'Masterclass', 10, '3h 45m', false, true),
-        ('Diseño y Perfilado de Barba', 'Aprende a diseñar, perfilar y dar forma a cualquier tipo de barba. Desde barba corta de oficina hasta full beard artística. Incluye técnica de navaja para líneas perfectas y mantenimiento profesional.', 'Rodrigo Fuentes', 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=800&q=80', null, $2, 'Exclusivo Miembros', 8, '2h 50m', true, true),
-        ('Corte Clásico con Tijera', 'Técnicas de tijera para cortes masculinos clásicos y modernos. Corte wet, texturizado, capas y acabado perfecto. El curso favorito de barberos que buscan diferenciarse con técnica de tijera premium.', 'Carlos Ibarra', 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80', 149.00, $3, 'Trending', 9, '3h 10m', false, true),
-        ('Colorimetría Masculina', 'Decoloración, matizado y coloración en cabello masculino. Aprende las bases del color, corrección de tono y las técnicas más demandadas en barberias premium: babylights, bleach & tone y gris platinado.', 'Valentina Cruz', 'https://images.unsplash.com/photo-1512690459411-b9245aed614d?w=800&q=80', 179.00, $4, 'Nuevo', 11, '4h 20m', false, true),
-        ('Gestión de Barbería Exitosa', 'Transforma tu barbería en un negocio rentable. Precios, redes sociales, fidelización de clientes, gestión del tiempo y cómo armar un equipo de trabajo. Para barberos que quieren crecer más allá del sillón.', 'Diego Pereira', 'https://images.unsplash.com/photo-1600948836101-f9ffda59d250?w=800&q=80', null, $5, 'Exclusivo Miembros', 14, '5h 30m', true, true),
-        ('Styling y Acabados Masculinos', 'Productos, técnicas de secado y acabados profesionales para el cabello masculino. Desde el look natural hasta el peinado de red carpet. Aprende a recomendar y aplicar productos como un experto.', 'Tomás Ríos', 'https://images.unsplash.com/photo-1596728325488-58c87691e9af?w=800&q=80', 129.00, $1, null, 7, '2h 15m', false, true)
-    `, [cats['fade'], cats['beard'], cats['clasico'], cats['colorimetria'], cats['negocio']]);
+        ('El Arte del Fade Perfecto', 'Domina todas las variaciones del fade desde cero hasta el nivel más avanzado. Técnicas de transición suave, skin fade y high fade explicadas paso a paso por un maestro barbero con más de 10 años de experiencia en competencias internacionales.', 'Marcos Delgado', 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=800&q=80', 199.00, $1, 'Masterclass', 10, '3h 45m', false, true, $6),
+        ('Diseño y Perfilado de Barba', 'Aprende a diseñar, perfilar y dar forma a cualquier tipo de barba. Desde barba corta de oficina hasta full beard artística. Incluye técnica de navaja para líneas perfectas y mantenimiento profesional.', 'Rodrigo Fuentes', 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=800&q=80', null, $2, 'Exclusivo Miembros', 8, '2h 50m', true, true, $6),
+        ('Corte Clásico con Tijera', 'Técnicas de tijera para cortes masculinos clásicos y modernos. Corte wet, texturizado, capas y acabado perfecto. El curso favorito de barberos que buscan diferenciarse con técnica de tijera premium.', 'Carlos Ibarra', 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80', 149.00, $3, 'Trending', 9, '3h 10m', false, true, $6),
+        ('Colorimetría Masculina', 'Decoloración, matizado y coloración en cabello masculino. Aprende las bases del color, corrección de tono y las técnicas más demandadas en barberias premium: babylights, bleach & tone y gris platinado.', 'Valentina Cruz', 'https://images.unsplash.com/photo-1512690459411-b9245aed614d?w=800&q=80', 179.00, $4, 'Nuevo', 11, '4h 20m', false, true, $6),
+        ('Gestión de Barbería Exitosa', 'Transforma tu barbería en un negocio rentable. Precios, redes sociales, fidelización de clientes, gestión del tiempo y cómo armar un equipo de trabajo. Para barberos que quieren crecer más allá del sillón.', 'Diego Pereira', 'https://images.unsplash.com/photo-1600948836101-f9ffda59d250?w=800&q=80', null, $5, 'Exclusivo Miembros', 14, '5h 30m', true, true, $6),
+        ('Styling y Acabados Masculinos', 'Productos, técnicas de secado y acabados profesionales para el cabello masculino. Desde el look natural hasta el peinado de red carpet. Aprende a recomendar y aplicar productos como un experto.', 'Tomás Ríos', 'https://images.unsplash.com/photo-1596728325488-58c87691e9af?w=800&q=80', 129.00, $1, null, 7, '2h 15m', false, true, $6)
+    `, [cats['fade'], cats['beard'], cats['clasico'], cats['colorimetria'], cats['negocio'], tenantId]);
 
     const coursesResult = await client.query('SELECT id, title FROM courses LIMIT 6');
     for (const course of coursesResult.rows) {
@@ -59,11 +62,20 @@ async function seed() {
       );
     }
 
+    // Super-admin (no tenant)
+    const superHash = await bcrypt.hash('SuperAdmin123!', 12);
+    await client.query(`
+      INSERT INTO users (email, password_hash, name, role, tenant_id)
+      VALUES ('superadmin@atenea.com', $1, 'Super Admin', 'super_admin', NULL)
+      ON CONFLICT (email) DO NOTHING
+    `, [superHash]);
+
     console.log('Database seeded successfully!');
     console.log('');
     console.log('Credenciales:');
-    console.log('  Admin: admin@atenea.com / Admin123!');
-    console.log('  User:  user@atenea.com  / User123!');
+    console.log('  Admin:      admin@atenea.com      / Admin123!');
+    console.log('  User:       user@atenea.com       / User123!');
+    console.log('  SuperAdmin: superadmin@atenea.com / SuperAdmin123!');
   } finally {
     client.release();
     await pool.end();

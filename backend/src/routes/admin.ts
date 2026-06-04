@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
+import { resolveTenant } from '../middleware/tenant';
 import { uploadImage, uploadVideo } from '../config/multer';
 import {
   getStats, getAllCourses, createCourse, updateCourse, deleteCourse,
@@ -8,7 +9,7 @@ import {
 } from '../controllers/adminController';
 
 const router = Router();
-router.use(authenticate, requireAdmin);
+router.use(resolveTenant, authenticate, requireAdmin);
 
 router.get('/stats', getStats);
 router.get('/courses', getAllCourses);

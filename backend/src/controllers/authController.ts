@@ -18,8 +18,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: 'Password must be at least 8 characters' });
       return;
     }
+    if (!req.tenantId) {
+      res.status(400).json({ message: 'Tenant required for registration' });
+      return;
+    }
 
-    const existing = await query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+    const existing = await query(
+      'SELECT id FROM users WHERE email = $1 AND tenant_id = $2',
+      [email.toLowerCase(), req.tenantId]
+    );
     if (existing.rows.length > 0) {
       res.status(400).json({ message: 'Email already registered' });
       return;
@@ -27,8 +34,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const passwordHash = await bcrypt.hash(password, 12);
     const result = await query(
-      'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, role',
-      [email.toLowerCase(), passwordHash, name]
+      'INSERT INTO users (email, password_hash, name, tenant_id) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role',
+      [email.toLowerCase(), passwordHash, name, req.tenantId]
     );
 
     const user = result.rows[0];
@@ -48,10 +55,19 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const result = await query(
-      'SELECT id, email, name, role, password_hash FROM users WHERE email = $1',
-      [email.toLowerCase()]
-    );
+    let result;
+    if (req.tenantId) {
+      // Tenant-scoped login; super_admin can log in from any tenant URL
+      result = await query(
+        "SELECT id, email, name, role, password_hash FROM users WHERE email = $1 AND (tenant_id = $2 OR (role = 'super_admin' AND tenant_id IS NULL))",
+        [email.toLowerCase(), req.tenantId]
+      );
+    } else {
+      result = await query(
+        "SELECT id, email, name, role, password_hash FROM users WHERE email = $1 AND role = 'super_admin' AND tenant_id IS NULL",
+        [email.toLowerCase()]
+      );
+    }
 
     if (result.rows.length === 0) {
       res.status(401).json({ message: 'Invalid credentials' });

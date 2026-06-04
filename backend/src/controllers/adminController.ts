@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import { query } from '../config/database';
 
-export const getStats = async (_req: Request, res: Response): Promise<void> => {
+export const getStats = async (req: Request, res: Response): Promise<void> => {
   try {
+    const tid = req.tenantId!;
     const [users, courses, subs, revenue] = await Promise.all([
-      query("SELECT COUNT(*) AS count FROM users WHERE role = 'user'"),
-      query('SELECT COUNT(*) AS count FROM courses'),
-      query("SELECT COUNT(*) AS count FROM subscriptions WHERE status = 'active' AND ends_at > NOW()"),
-      query('SELECT COALESCE(SUM(amount), 0) AS total FROM course_purchases'),
+      query("SELECT COUNT(*) AS count FROM users WHERE role = 'user' AND tenant_id = $1", [tid]),
+      query('SELECT COUNT(*) AS count FROM courses WHERE tenant_id = $1', [tid]),
+      query("SELECT COUNT(*) AS count FROM subscriptions WHERE tenant_id = $1 AND status = 'active' AND ends_at > NOW()", [tid]),
+      query('SELECT COALESCE(SUM(amount), 0) AS total FROM course_purchases WHERE tenant_id = $1', [tid]),
     ]);
     res.json({
       totalUsers: parseInt(users.rows[0].count),
@@ -21,14 +22,15 @@ export const getStats = async (_req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const getAllCourses = async (_req: Request, res: Response): Promise<void> => {
+export const getAllCourses = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await query(`
       SELECT c.*, cat.name AS category_name, cat.slug AS category_slug
       FROM courses c
       LEFT JOIN categories cat ON c.category_id = cat.id
+      WHERE c.tenant_id = $1
       ORDER BY c.created_at DESC
-    `);
+    `, [req.tenantId!]);
     res.json(result.rows);
   } catch (error) {
     console.error('GetAllCourses error:', error);
@@ -49,13 +51,15 @@ export const createCourse = async (req: Request, res: Response): Promise<void> =
 
     const result = await query(
       `INSERT INTO courses
-        (title, description, instructor_name, thumbnail_url, price, category_id, badge, total_duration, is_membership_exclusive, is_published)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        (title, description, instructor_name, thumbnail_url, price, category_id, badge,
+         total_duration, is_membership_exclusive, is_published, tenant_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
       [title, description, instructor_name, thumbnail_url,
         price || null, category_id || null, badge || null, total_duration || null,
         is_membership_exclusive === 'true' || is_membership_exclusive === true,
-        is_published === 'true' || is_published === true]
+        is_published === 'true' || is_published === true,
+        req.tenantId!]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -87,14 +91,14 @@ export const updateCourse = async (req: Request, res: Response): Promise<void> =
         is_membership_exclusive = COALESCE($9::boolean, is_membership_exclusive),
         is_published = COALESCE($10::boolean, is_published),
         updated_at = NOW()
-       WHERE id = $11
+       WHERE id = $11 AND tenant_id = $12
        RETURNING *`,
       [title, description, instructor_name, thumbnail_url,
         price !== undefined && price !== '' ? price : null,
         category_id, badge || null, total_duration,
         is_membership_exclusive != null ? (is_membership_exclusive === 'true' || is_membership_exclusive === true) : null,
         is_published != null ? (is_published === 'true' || is_published === true) : null,
-        id]
+        id, req.tenantId!]
     );
     if (result.rows.length === 0) {
       res.status(404).json({ message: 'Course not found' });
@@ -109,7 +113,7 @@ export const updateCourse = async (req: Request, res: Response): Promise<void> =
 
 export const deleteCourse = async (req: Request, res: Response): Promise<void> => {
   try {
-    await query('DELETE FROM courses WHERE id = $1', [req.params.id]);
+    await query('DELETE FROM courses WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId!]);
     res.json({ message: 'Course deleted' });
   } catch (error) {
     console.error('DeleteCourse error:', error);
@@ -120,8 +124,11 @@ export const deleteCourse = async (req: Request, res: Response): Promise<void> =
 export const getLessons = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await query(
-      'SELECT * FROM lessons WHERE course_id = $1 ORDER BY section_number, order_index',
-      [req.params.courseId]
+      `SELECT l.* FROM lessons l
+       JOIN courses c ON c.id = l.course_id
+       WHERE l.course_id = $1 AND c.tenant_id = $2
+       ORDER BY l.section_number, l.order_index`,
+      [req.params.courseId, req.tenantId!]
     );
     res.json(result.rows);
   } catch (error) {
@@ -234,8 +241,8 @@ export const updateUserRole = async (req: Request, res: Response): Promise<void>
       return;
     }
     const result = await query(
-      'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, email, name, role',
-      [role, id]
+      'UPDATE users SET role = $1 WHERE id = $2 AND tenant_id = $3 RETURNING id, email, name, role',
+      [role, id, req.tenantId!]
     );
     if (result.rows.length === 0) { res.status(404).json({ message: 'User not found' }); return; }
     res.json(result.rows[0]);
@@ -252,7 +259,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       res.status(400).json({ message: 'No puedes eliminar tu propia cuenta.' });
       return;
     }
-    await query('DELETE FROM users WHERE id = $1', [id]);
+    await query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, req.tenantId!]);
     res.json({ message: 'User deleted' });
   } catch (error) {
     console.error('DeleteUser error:', error);
@@ -260,15 +267,16 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const getAllUsers = async (_req: Request, res: Response): Promise<void> => {
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await query(`
       SELECT u.id, u.email, u.name, u.role, u.created_at,
              s.plan, s.status AS sub_status, s.ends_at
       FROM users u
-      LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active' AND s.ends_at > NOW()
+      LEFT JOIN subscriptions s ON s.user_id = u.id AND s.tenant_id = $1 AND s.status = 'active' AND s.ends_at > NOW()
+      WHERE u.tenant_id = $1 AND u.role != 'super_admin'
       ORDER BY u.created_at DESC
-    `);
+    `, [req.tenantId!]);
     res.json(result.rows);
   } catch (error) {
     console.error('GetAllUsers error:', error);

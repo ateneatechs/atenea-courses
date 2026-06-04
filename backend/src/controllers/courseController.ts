@@ -1,10 +1,18 @@
 import { Request, Response } from 'express';
 import { query } from '../config/database';
 
-const checkAccess = async (userId: string, courseId: string, role?: string): Promise<boolean> => {
-  if (role === 'admin') return true;
+const checkAccess = async (
+  userId: string,
+  courseId: string,
+  tenantId: string,
+  role?: string
+): Promise<boolean> => {
+  if (role === 'admin' || role === 'super_admin') return true;
   const [sub, purchase] = await Promise.all([
-    query(`SELECT id FROM subscriptions WHERE user_id = $1 AND status = 'active' AND ends_at > NOW()`, [userId]),
+    query(
+      `SELECT id FROM subscriptions WHERE user_id = $1 AND tenant_id = $2 AND status = 'active' AND ends_at > NOW()`,
+      [userId, tenantId]
+    ),
     query('SELECT id FROM course_purchases WHERE user_id = $1 AND course_id = $2', [userId, courseId]),
   ]);
   return sub.rows.length > 0 || purchase.rows.length > 0;
@@ -13,12 +21,12 @@ const checkAccess = async (userId: string, courseId: string, role?: string): Pro
 export const getCourses = async (req: Request, res: Response): Promise<void> => {
   try {
     const { category, search, sort = 'newest' } = req.query;
-    const params: unknown[] = [];
+    const params: unknown[] = [req.tenantId!];
     let sql = `
       SELECT c.*, cat.name AS category_name, cat.slug AS category_slug
       FROM courses c
       LEFT JOIN categories cat ON c.category_id = cat.id
-      WHERE c.is_published = true
+      WHERE c.is_published = true AND c.tenant_id = $1
     `;
 
     if (category && category !== 'all') {
@@ -51,8 +59,8 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
     const courseResult = await query(
       `SELECT c.*, cat.name AS category_name FROM courses c
        LEFT JOIN categories cat ON c.category_id = cat.id
-       WHERE c.id = $1 AND c.is_published = true`,
-      [id]
+       WHERE c.id = $1 AND c.tenant_id = $2 AND c.is_published = true`,
+      [id, req.tenantId!]
     );
     if (courseResult.rows.length === 0) {
       res.status(404).json({ message: 'Course not found' });
@@ -66,7 +74,7 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
 
     let hasAccess = false;
     if (req.user) {
-      hasAccess = await checkAccess(req.user.userId, id, req.user.role);
+      hasAccess = await checkAccess(req.user.userId, id, req.tenantId!, req.user.role);
     }
 
     const lessons = lessonsResult.rows.map(l => ({
@@ -81,7 +89,7 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const getInstructors = async (_req: Request, res: Response): Promise<void> => {
+export const getInstructors = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await query(`
       SELECT
@@ -94,10 +102,10 @@ export const getInstructors = async (_req: Request, res: Response): Promise<void
         ) AS categories
       FROM courses c
       LEFT JOIN categories cat ON c.category_id = cat.id
-      WHERE c.is_published = true
+      WHERE c.is_published = true AND c.tenant_id = $1
       GROUP BY c.instructor_name
       ORDER BY COUNT(c.id) DESC, c.instructor_name ASC
-    `);
+    `, [req.tenantId!]);
     res.json(result.rows);
   } catch (error) {
     console.error('GetInstructors error:', error);
@@ -105,9 +113,12 @@ export const getInstructors = async (_req: Request, res: Response): Promise<void
   }
 };
 
-export const getCategories = async (_req: Request, res: Response): Promise<void> => {
+export const getCategories = async (req: Request, res: Response): Promise<void> => {
   try {
-    const result = await query('SELECT * FROM categories ORDER BY name');
+    const result = await query(
+      'SELECT * FROM categories WHERE tenant_id = $1 ORDER BY name',
+      [req.tenantId!]
+    );
     res.json(result.rows);
   } catch (error) {
     console.error('GetCategories error:', error);
@@ -121,8 +132,8 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
     const userId = req.user!.userId;
 
     await query(
-      `UPDATE subscriptions SET status = 'cancelled' WHERE user_id = $1 AND status = 'active'`,
-      [userId]
+      `UPDATE subscriptions SET status = 'cancelled' WHERE user_id = $1 AND tenant_id = $2 AND status = 'active'`,
+      [userId, req.tenantId!]
     );
 
     const startsAt = new Date();
@@ -130,9 +141,9 @@ export const createSubscription = async (req: Request, res: Response): Promise<v
     plan === 'annual' ? endsAt.setFullYear(endsAt.getFullYear() + 1) : endsAt.setMonth(endsAt.getMonth() + 1);
 
     const result = await query(
-      `INSERT INTO subscriptions (user_id, plan, status, starts_at, ends_at)
-       VALUES ($1, $2, 'active', $3, $4) RETURNING *`,
-      [userId, plan, startsAt, endsAt]
+      `INSERT INTO subscriptions (user_id, tenant_id, plan, status, starts_at, ends_at)
+       VALUES ($1, $2, $3, 'active', $4, $5) RETURNING *`,
+      [userId, req.tenantId!, plan, startsAt, endsAt]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -146,7 +157,10 @@ export const purchaseCourse = async (req: Request, res: Response): Promise<void>
     const { courseId } = req.body;
     const userId = req.user!.userId;
 
-    const courseResult = await query('SELECT * FROM courses WHERE id = $1 AND is_published = true', [courseId]);
+    const courseResult = await query(
+      'SELECT * FROM courses WHERE id = $1 AND tenant_id = $2 AND is_published = true',
+      [courseId, req.tenantId!]
+    );
     if (courseResult.rows.length === 0) {
       res.status(404).json({ message: 'Course not found' });
       return;
@@ -163,8 +177,8 @@ export const purchaseCourse = async (req: Request, res: Response): Promise<void>
 
     const course = courseResult.rows[0];
     const result = await query(
-      'INSERT INTO course_purchases (user_id, course_id, amount) VALUES ($1, $2, $3) RETURNING *',
-      [userId, courseId, course.price]
+      'INSERT INTO course_purchases (user_id, course_id, tenant_id, amount) VALUES ($1, $2, $3, $4) RETURNING *',
+      [userId, courseId, req.tenantId!, course.price]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -185,7 +199,7 @@ export const getLessonById = async (req: Request, res: Response): Promise<void> 
     }
 
     const lesson = lessonResult.rows[0];
-    const hasAccess = await checkAccess(userId, lesson.course_id, req.user!.role);
+    const hasAccess = await checkAccess(userId, lesson.course_id, req.tenantId!, req.user!.role);
 
     if (!hasAccess) {
       res.status(403).json({ message: 'Access denied. Subscribe or purchase this course.' });

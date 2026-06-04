@@ -4,6 +4,8 @@ import path from 'path';
 import authRoutes from './routes/auth';
 import courseRoutes from './routes/courses';
 import adminRoutes from './routes/admin';
+import settingsRoutes from './routes/settings';
+import superAdminRoutes from './routes/superAdmin';
 
 const app = express();
 
@@ -15,9 +17,11 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-app.use('/api/auth', authRoutes);
-app.use('/api/courses', courseRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/auth',        authRoutes);
+app.use('/api/courses',     courseRoutes);
+app.use('/api/admin',       adminRoutes);
+app.use('/api/settings',    settingsRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
