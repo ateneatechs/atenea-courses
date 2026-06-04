@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import './SuperAdminDashboard.css';
 
@@ -18,7 +17,6 @@ const SuperAdminDashboard: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newSlug, setNewSlug] = useState('');
   const [creating, setCreating] = useState(false);
-  const navigate = useNavigate();
 
   const load = async () => {
     const { data } = await api.get<Tenant[]>('/super-admin/tenants');
@@ -81,7 +79,7 @@ const SuperAdminDashboard: React.FC = () => {
                 <td>
                   <button
                     className="super-admin-btn-link"
-                    onClick={() => navigate(`/${t.slug}`)}
+                    onClick={() => window.open(`https://${t.slug}.atenea-courses.com`, '_blank')}
                   >
                     Ir →
                   </button>
@@ -113,7 +111,7 @@ const SuperAdminDashboard: React.FC = () => {
               className="super-admin-input"
             />
             <p className="super-admin-slug-preview">
-              URL: atenea-courses.com/<strong>{newSlug || '...'}</strong>
+              URL: <strong>{newSlug || '...'}</strong>.atenea-courses.com
             </p>
             <div className="super-admin-modal-actions">
               <button className="super-admin-btn-outline" onClick={() => setShowModal(false)}>
