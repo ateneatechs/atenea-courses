@@ -1,6 +1,7 @@
 import React from 'react';
-import { Outlet, useParams, Navigate } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import { TenantProvider, useTenant } from '../../../contexts/TenantContext';
+import { getTenantSlug } from '../../../utils/tenant';
 import Navbar from '../Navbar/Navbar';
 import Footer from '../Footer/Footer';
 
@@ -11,7 +12,7 @@ const TenantGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const TenantLayout: React.FC = () => {
-  const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  const tenantSlug = getTenantSlug();
 
   if (!tenantSlug) return <Navigate to="/" replace />;
 
