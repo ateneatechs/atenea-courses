@@ -2,8 +2,9 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'super_admin';
   avatar_url?: string;
+  tenant_id?: string | null;
   created_at: Date;
 }
 
@@ -23,6 +24,7 @@ export interface Course {
   total_duration: string;
   is_membership_exclusive: boolean;
   is_published: boolean;
+  tenant_id: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -44,6 +46,7 @@ export interface Lesson {
 export interface Subscription {
   id: string;
   user_id: string;
+  tenant_id: string;
   plan: string;
   status: 'active' | 'cancelled' | 'expired';
   starts_at: Date;
@@ -53,13 +56,14 @@ export interface Subscription {
 export interface JwtPayload {
   userId: string;
   email: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'super_admin';
 }
 
 declare global {
   namespace Express {
     interface Request {
       user?: JwtPayload;
+      tenantId?: string;
     }
   }
 }

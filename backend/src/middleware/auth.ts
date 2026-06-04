@@ -27,14 +27,22 @@ export const optionalAuth = (req: Request, _res: Response, next: NextFunction): 
       req.user = decoded;
     }
   } catch {
-    // Ignore auth errors for optional routes
+    // ignore for optional routes
   }
   next();
 };
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (req.user?.role !== 'admin') {
+  if (!req.user || !['admin', 'super_admin'].includes(req.user.role)) {
     res.status(403).json({ message: 'Admin access required' });
+    return;
+  }
+  next();
+};
+
+export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.user?.role !== 'super_admin') {
+    res.status(403).json({ message: 'Super-admin access required' });
     return;
   }
   next();
