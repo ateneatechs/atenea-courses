@@ -19,7 +19,7 @@ const CourseCard: React.FC<Props> = ({ course }) => {
       : 'Gratis';
 
   return (
-    <div className="course-card" onClick={() => navigate(`courses/${course.id}`)}>
+    <div className="course-card" onClick={() => navigate(`/courses/${course.id}`)}>
       <div className="course-card-image-wrap glass-card">
         {course.thumbnail_url && (
           <img src={course.thumbnail_url} alt={course.title} loading="lazy" />
