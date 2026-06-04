@@ -9,7 +9,7 @@ const getTenantSlug = (): string | null => {
 const api = axios.create({ baseURL: '/api' });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('lumiere-token');
+  const token = localStorage.getItem('atenea-token');
   if (token) config.headers['Authorization'] = `Bearer ${token}`;
 
   const slug = getTenantSlug();
@@ -22,7 +22,7 @@ api.interceptors.response.use(
   (r) => r,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('lumiere-token');
+      localStorage.removeItem('atenea-token');
     }
     return Promise.reject(error);
   }

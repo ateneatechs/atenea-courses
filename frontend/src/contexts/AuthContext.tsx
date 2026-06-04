@@ -20,13 +20,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    const token = localStorage.getItem('lumiere-token');
+    const token = localStorage.getItem('atenea-token');
     if (!token) { setIsLoading(false); return; }
     try {
       const { data } = await api.get<User>('/auth/me');
       setUser(data);
     } catch {
-      localStorage.removeItem('lumiere-token');
+      localStorage.removeItem('atenea-token');
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -37,18 +37,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     const { data } = await api.post<AuthResponse>('/auth/login', { email, password });
-    localStorage.setItem('lumiere-token', data.token);
+    localStorage.setItem('atenea-token', data.token);
     setUser(data.user);
   };
 
   const register = async (name: string, email: string, password: string) => {
     const { data } = await api.post<AuthResponse>('/auth/register', { name, email, password });
-    localStorage.setItem('lumiere-token', data.token);
+    localStorage.setItem('atenea-token', data.token);
     setUser(data.user);
   };
 
   const logout = () => {
-    localStorage.removeItem('lumiere-token');
+    localStorage.removeItem('atenea-token');
     setUser(null);
   };
 

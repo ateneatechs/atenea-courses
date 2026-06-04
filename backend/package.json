@@ -1,7 +1,7 @@
 {
-  "name": "lumiere-academy-backend",
+  "name": "atenea-courses-backend",
   "version": "1.0.0",
-  "description": "Lumière Academy Backend API",
+  "description": "Atenea Courses Backend API",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
