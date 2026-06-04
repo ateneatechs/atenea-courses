@@ -71,6 +71,29 @@ Revised: on completion, save `progressSeconds: 0` (restart from beginning for co
 
 ---
 
+## Custom Play Button
+
+Before the user clicks play, show the course thumbnail with a custom play button overlay that matches the page design system — no YouTube branding visible.
+
+```
+┌─────────────────────────────────┐
+│                                 │
+│       [thumbnail image]         │
+│                                 │
+│          ⬤ play_circle          │  ← Material Symbol, --color-primary, 72px
+│        (custom overlay)         │
+│                                 │
+└─────────────────────────────────┘
+```
+
+On click: swap thumbnail for the YouTube iframe with `autoplay=1`. The YouTube iframe loads and starts playing immediately, bypassing YouTube's own play button overlay.
+
+During playback: YouTube's native controls are shown (required by YouTube ToS). The custom button only appears in the "not yet started" state.
+
+The play button uses existing design tokens: `var(--color-primary)`, `var(--color-on-primary)`, `var(--shadow-glow)` on hover.
+
+---
+
 ## Library
 
 **`react-youtube`** — official YouTube IFrame API wrapper for React.
