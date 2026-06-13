@@ -6,6 +6,7 @@ import courseRoutes from './routes/courses';
 import adminRoutes from './routes/admin';
 import settingsRoutes from './routes/settings';
 import superAdminRoutes from './routes/superAdmin';
+import mercadopagoRoutes from './routes/mercadopago';
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use('/api/courses',     courseRoutes);
 app.use('/api/admin',       adminRoutes);
 app.use('/api/settings',    settingsRoutes);
 app.use('/api/super-admin', superAdminRoutes);
+app.use('/api', mercadopagoRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
