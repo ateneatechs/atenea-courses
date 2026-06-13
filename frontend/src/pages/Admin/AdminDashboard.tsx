@@ -3,6 +3,7 @@ import api from '../../services/api';
 import { Course, Lesson, AdminStats, Category, AdminTab } from '../../types';
 import { useTenant } from '../../contexts/TenantContext';
 import { formatARS } from '../../utils/currency';
+import MembershipTab from './MembershipTab';
 import './AdminDashboard.css';
 
 const BrandingTab: React.FC = () => {
@@ -280,6 +281,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'courses', icon: 'play_circle', label: 'Cursos' },
     { id: 'users', icon: 'group', label: 'Usuarios' },
     { id: 'branding', icon: 'palette', label: 'Personalización' },
+    { id: 'membership', icon: 'workspace_premium', label: 'Membresías' },
   ];
 
   return (
@@ -601,6 +603,15 @@ const AdminDashboard: React.FC = () => {
             <h1 className="admin-page-title">Personalización</h1>
             <p className="admin-page-subtitle">Configura la identidad visual de tu academia.</p>
             <BrandingTab />
+          </>
+        )}
+
+        {/* ── MEMBERSHIP ── */}
+        {tab === 'membership' && (
+          <>
+            <h1 className="admin-page-title">Membresías</h1>
+            <p className="admin-page-subtitle">Configura los planes de suscripción de tu academia.</p>
+            <MembershipTab />
           </>
         )}
       </main>
