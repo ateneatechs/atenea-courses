@@ -5,6 +5,7 @@ interface TenantSettings {
   tenantSlug: string;
   tenantName: string;
   logoUrl: string | null;
+  mpConnected: boolean;
   notFound: boolean;
   refreshSettings: () => Promise<void>;
 }
@@ -17,15 +18,17 @@ export const TenantProvider: React.FC<{
 }> = ({ tenantSlug, children }) => {
   const [tenantName, setTenantName] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [mpConnected, setMpConnected] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const refreshSettings = useCallback(async () => {
     try {
-      const { data } = await api.get<{ site_name: string; logo_url: string | null }>(
+      const { data } = await api.get<{ site_name: string; logo_url: string | null; mp_connected: boolean }>(
         '/settings/public'
       );
       setTenantName(data.site_name || tenantSlug);
       setLogoUrl(data.logo_url);
+      setMpConnected(!!data.mp_connected);
       setNotFound(false);
     } catch (err: unknown) {
       if ((err as { response?: { status?: number } }).response?.status === 404) {
@@ -37,7 +40,7 @@ export const TenantProvider: React.FC<{
   useEffect(() => { refreshSettings(); }, [refreshSettings]);
 
   return (
-    <TenantContext.Provider value={{ tenantSlug, tenantName, logoUrl, notFound, refreshSettings }}>
+    <TenantContext.Provider value={{ tenantSlug, tenantName, logoUrl, mpConnected, notFound, refreshSettings }}>
       {children}
     </TenantContext.Provider>
   );

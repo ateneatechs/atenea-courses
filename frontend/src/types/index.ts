@@ -74,11 +74,16 @@ export interface AdminStats {
   totalRevenue: number;
 }
 
+export interface MercadoPagoStatus {
+  connected: boolean;
+  mpUserId: string | null;
+}
+
 export interface AuthResponse {
   token: string;
   user: User;
 }
 
 export type SortOption = 'newest' | 'popular' | 'price-desc';
-export type AdminTab = 'overview' | 'courses' | 'users' | 'branding';
+export type AdminTab = 'overview' | 'courses' | 'users' | 'branding' | 'payments';
 export type CourseTab = 'overview' | 'resources' | 'discussion';
