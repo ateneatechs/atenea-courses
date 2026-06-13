@@ -18,6 +18,14 @@ const checkAccess = async (
   return sub.rows.length > 0 || purchase.rows.length > 0;
 };
 
+const isMembershipEnabled = async (tenantId: string): Promise<boolean> => {
+  const result = await query(
+    `SELECT value FROM site_settings WHERE tenant_id = $1 AND key = 'membership_enabled'`,
+    [tenantId]
+  );
+  return result.rows.length === 0 || result.rows[0].value === 'true';
+};
+
 export const getCourses = async (req: Request, res: Response): Promise<void> => {
   try {
     const { category, search, sort = 'newest' } = req.query;
@@ -36,6 +44,10 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
     if (search) {
       params.push(`%${search}%`);
       sql += ` AND (c.title ILIKE $${params.length} OR c.instructor_name ILIKE $${params.length})`;
+    }
+
+    if (!(await isMembershipEnabled(req.tenantId!))) {
+      sql += ` AND c.is_membership_exclusive = false`;
     }
 
     const orderMap: Record<string, string> = {
@@ -63,6 +75,12 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
       [id, req.tenantId!]
     );
     if (courseResult.rows.length === 0) {
+      res.status(404).json({ message: 'Course not found' });
+      return;
+    }
+
+    const course = courseResult.rows[0];
+    if (course.is_membership_exclusive && !(await isMembershipEnabled(req.tenantId!))) {
       res.status(404).json({ message: 'Course not found' });
       return;
     }
@@ -104,7 +122,7 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
       };
     });
 
-    res.json({ ...courseResult.rows[0], lessons, hasAccess });
+    res.json({ ...course, lessons, hasAccess });
   } catch (error) {
     console.error('GetCourseById error:', error);
     res.status(500).json({ message: 'Server error' });
