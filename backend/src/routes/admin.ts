@@ -7,6 +7,7 @@ import {
   getLessons, createLesson, updateLesson, deleteLesson,
   getAllUsers, updateUserRole, deleteUser,
 } from '../controllers/adminController';
+import { getMembershipSettings, updateMembershipSettings } from '../controllers/settingsController';
 
 const router = Router();
 router.use(resolveTenant, authenticate, requireAdmin, requireSameTenant);
@@ -25,5 +26,8 @@ router.delete('/lessons/:id', deleteLesson);
 router.get('/users', getAllUsers);
 router.patch('/users/:id/role', updateUserRole);
 router.delete('/users/:id', deleteUser);
+
+router.get('/membership-settings', getMembershipSettings);
+router.put('/membership-settings', updateMembershipSettings);
 
 export default router;
