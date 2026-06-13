@@ -111,6 +111,31 @@ export const updateCourse = async (req: Request, res: Response): Promise<void> =
   }
 };
 
+export const toggleCoursePublished = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { is_published } = req.body;
+    if (typeof is_published !== 'boolean') {
+      res.status(400).json({ message: 'is_published debe ser un valor booleano' });
+      return;
+    }
+    const result = await query(
+      `UPDATE courses SET is_published = $1, updated_at = NOW()
+       WHERE id = $2 AND tenant_id = $3
+       RETURNING *`,
+      [is_published, id, req.tenantId!]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ message: 'Course not found' });
+      return;
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('ToggleCoursePublished error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const deleteCourse = async (req: Request, res: Response): Promise<void> => {
   try {
     await query('DELETE FROM courses WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId!]);

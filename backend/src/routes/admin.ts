@@ -3,7 +3,7 @@ import { authenticate, requireAdmin, requireSameTenant } from '../middleware/aut
 import { resolveTenant } from '../middleware/tenant';
 import { uploadImage, uploadVideo } from '../config/multer';
 import {
-  getStats, getAllCourses, createCourse, updateCourse, deleteCourse,
+  getStats, getAllCourses, createCourse, updateCourse, toggleCoursePublished, deleteCourse,
   getLessons, createLesson, updateLesson, deleteLesson,
   getAllUsers, updateUserRole, deleteUser,
 } from '../controllers/adminController';
@@ -16,6 +16,7 @@ router.get('/stats', getStats);
 router.get('/courses', getAllCourses);
 router.post('/courses', uploadImage.single('thumbnail'), createCourse);
 router.put('/courses/:id', uploadImage.single('thumbnail'), updateCourse);
+router.patch('/courses/:id/published', toggleCoursePublished);
 router.delete('/courses/:id', deleteCourse);
 
 router.get('/courses/:courseId/lessons', getLessons);
