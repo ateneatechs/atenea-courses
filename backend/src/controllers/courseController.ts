@@ -67,12 +67,18 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // A JWT minted for another tenant must not grant access/progress here.
+    const sameTenantUser =
+      req.user && (req.user.role === 'super_admin' || req.user.tenantId === req.tenantId)
+        ? req.user
+        : undefined;
+
     let hasAccess = false;
-    if (req.user) {
-      hasAccess = await checkAccess(req.user.userId, id, req.tenantId!, req.user.role);
+    if (sameTenantUser) {
+      hasAccess = await checkAccess(sameTenantUser.userId, id, req.tenantId!, sameTenantUser.role);
     }
 
-    const lessonsQuery = req.user
+    const lessonsQuery = sameTenantUser
       ? `SELECT l.*,
            lp.completed    AS lp_completed,
            lp.progress_seconds AS lp_seconds
@@ -83,7 +89,7 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
          ORDER BY l.section_number, l.order_index`
       : 'SELECT * FROM lessons WHERE course_id = $1 ORDER BY section_number, order_index';
 
-    const lessonsParams = req.user ? [id, req.user.userId] : [id];
+    const lessonsParams = sameTenantUser ? [id, sameTenantUser.userId] : [id];
     const lessonsResult = await query(lessonsQuery, lessonsParams);
 
     const lessons = lessonsResult.rows.map(l => {
@@ -92,7 +98,7 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
       return {
         ...lessonFields,
         video_url: hasAccess ? l.video_url : null,
-        progress: req.user
+        progress: sameTenantUser
           ? { completed: lp_completed ?? false, progress_seconds: lp_seconds ?? 0 }
           : null,
       };

@@ -47,3 +47,19 @@ export const requireSuperAdmin = (req: Request, res: Response, next: NextFunctio
   }
   next();
 };
+
+// Ensures the authenticated user's own tenant matches the tenant resolved from
+// X-Tenant-Slug. Without this, a valid JWT from tenant A could be replayed
+// against tenant B's subdomain to access/modify tenant B's data.
+// super_admin (tenantId = null) is exempt — they manage all tenants.
+export const requireSameTenant = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.user?.role === 'super_admin') {
+    next();
+    return;
+  }
+  if (!req.user || req.user.tenantId !== req.tenantId) {
+    res.status(403).json({ message: 'Forbidden for this tenant' });
+    return;
+  }
+  next();
+};

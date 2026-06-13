@@ -4,7 +4,7 @@ import {
   createSubscription, purchaseCourse,
   getLessonById, updateLessonProgress,
 } from '../controllers/courseController';
-import { authenticate, optionalAuth } from '../middleware/auth';
+import { authenticate, optionalAuth, requireSameTenant } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
 const router = Router();
@@ -14,9 +14,9 @@ router.get('/', getCourses);
 router.get('/categories', getCategories);
 router.get('/instructors', getInstructors);
 router.get('/:id', optionalAuth, getCourseById);
-router.post('/subscribe', authenticate, createSubscription);
-router.post('/purchase', authenticate, purchaseCourse);
-router.get('/lessons/:id', authenticate, getLessonById);
-router.put('/lessons/:id/progress', authenticate, updateLessonProgress);
+router.post('/subscribe', authenticate, requireSameTenant, createSubscription);
+router.post('/purchase', authenticate, requireSameTenant, purchaseCourse);
+router.get('/lessons/:id', authenticate, requireSameTenant, getLessonById);
+router.put('/lessons/:id/progress', authenticate, requireSameTenant, updateLessonProgress);
 
 export default router;
