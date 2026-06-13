@@ -3,6 +3,7 @@ import api from '../../services/api';
 import { Course, Lesson, AdminStats, Category, AdminTab } from '../../types';
 import { useTenant } from '../../contexts/TenantContext';
 import './AdminDashboard.css';
+import PaymentsTab from './PaymentsTab';
 
 const BrandingTab: React.FC = () => {
   const { logoUrl, tenantName, refreshSettings } = useTenant();
@@ -101,6 +102,7 @@ const AdminDashboard: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [mpToast, setMpToast] = useState<string | null>(null);
 
   // Course form
   const [showCourseForm, setShowCourseForm] = useState(false);
@@ -163,6 +165,22 @@ const AdminDashboard: React.FC = () => {
     loadStats();
     loadCourses();
   }, [loadStats, loadCourses]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mp = params.get('mp');
+    if (mp === 'connected') {
+      setMpToast('Mercado Pago conectado correctamente.');
+      setTab('payments');
+    } else if (mp === 'error') {
+      setMpToast('No se pudo conectar Mercado Pago. Intenta nuevamente.');
+    }
+    if (mp) {
+      params.delete('mp');
+      const query = params.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+    }
+  }, []);
 
   useEffect(() => {
     if (tab === 'users') loadUsers();
@@ -279,6 +297,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'courses', icon: 'play_circle', label: 'Cursos' },
     { id: 'users', icon: 'group', label: 'Usuarios' },
     { id: 'branding', icon: 'palette', label: 'Personalización' },
+    { id: 'payments', icon: 'payments', label: 'Pagos' },
   ];
 
   return (
@@ -300,6 +319,20 @@ const AdminDashboard: React.FC = () => {
 
       {/* Main */}
       <main className="admin-main">
+        {mpToast && (
+          <div
+            style={{
+              padding: '12px 20px', marginBottom: 24, borderRadius: 'var(--radius-md)',
+              background: 'var(--color-surface-container)', color: 'var(--color-on-surface)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}
+          >
+            <span>{mpToast}</span>
+            <button onClick={() => setMpToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
+            </button>
+          </div>
+        )}
         {/* ── OVERVIEW ── */}
         {tab === 'overview' && (
           <>
@@ -600,6 +633,15 @@ const AdminDashboard: React.FC = () => {
             <h1 className="admin-page-title">Personalización</h1>
             <p className="admin-page-subtitle">Configura la identidad visual de tu academia.</p>
             <BrandingTab />
+          </>
+        )}
+
+        {/* ── PAYMENTS ── */}
+        {tab === 'payments' && (
+          <>
+            <h1 className="admin-page-title">Pagos</h1>
+            <p className="admin-page-subtitle">Conecta Mercado Pago para cobrar tus cursos.</p>
+            <PaymentsTab />
           </>
         )}
       </main>
