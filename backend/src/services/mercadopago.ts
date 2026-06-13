@@ -4,7 +4,7 @@ import { query } from '../config/database';
 
 const MP_API_BASE = 'https://api.mercadopago.com';
 
-interface MpTokenResponse {
+export interface MpTokenResponse {
   access_token: string;
   refresh_token: string;
   user_id: number;
@@ -53,7 +53,7 @@ export const refreshAccessToken = async (refreshToken: string): Promise<MpTokenR
   return res.json() as Promise<MpTokenResponse>;
 };
 
-interface TenantMpRow {
+export interface TenantMpRow {
   id: string;
   mp_access_token: string | null;
   mp_refresh_token: string | null;
