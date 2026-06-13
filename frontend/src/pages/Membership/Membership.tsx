@@ -143,7 +143,7 @@ const Membership: React.FC = () => {
           </p>
           <div className="plan-price">
             <span className="plan-price-from">Desde</span>
-            <span className="plan-price-amount">$129</span>
+            <span className="plan-price-amount">{formatARS(129)}</span>
           </div>
           <ul className="plan-features">
             {[
