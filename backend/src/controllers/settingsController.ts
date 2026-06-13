@@ -3,14 +3,18 @@ import { query } from '../config/database';
 
 export const getPublicSettings = async (req: Request, res: Response): Promise<void> => {
   try {
-    const result = await query(
-      `SELECT key, value FROM site_settings WHERE tenant_id = $1 AND key IN ('logo_url', 'site_name')`,
-      [req.tenantId!]
-    );
-    const settings: Record<string, string | null> = { logo_url: null, site_name: 'Atenea Courses' };
-    result.rows.forEach((r: { key: string; value: string | null }) => {
+    const [settingsResult, tenantResult] = await Promise.all([
+      query(
+        `SELECT key, value FROM site_settings WHERE tenant_id = $1 AND key IN ('logo_url', 'site_name')`,
+        [req.tenantId!]
+      ),
+      query('SELECT mp_access_token FROM tenants WHERE id = $1', [req.tenantId!]),
+    ]);
+    const settings: Record<string, string | boolean | null> = { logo_url: null, site_name: 'Atenea Courses' };
+    settingsResult.rows.forEach((r: { key: string; value: string | null }) => {
       settings[r.key] = r.value;
     });
+    settings.mp_connected = !!tenantResult.rows[0]?.mp_access_token;
     res.json(settings);
   } catch (error) {
     console.error('GetPublicSettings error:', error);
