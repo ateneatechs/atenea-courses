@@ -12,6 +12,7 @@ const RegisterModal: React.FC<Props> = ({ onClose, onSwitchToLogin }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,6 +21,10 @@ const RegisterModal: React.FC<Props> = ({ onClose, onSwitchToLogin }) => {
     setError('');
     if (password.length < 8) {
       setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (!acceptedTerms) {
+      setError('Debes aceptar los Términos y Condiciones para crear una cuenta.');
       return;
     }
     setLoading(true);
@@ -81,6 +86,22 @@ const RegisterModal: React.FC<Props> = ({ onClose, onSwitchToLogin }) => {
               onChange={e => setPassword(e.target.value)}
               required minLength={8}
             />
+          </div>
+
+          <div className="form-checkbox-field">
+            <input
+              id="reg-terms"
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={e => setAcceptedTerms(e.target.checked)}
+              required
+            />
+            <label htmlFor="reg-terms">
+              Acepto los{' '}
+              <a href="/terms" target="_blank" rel="noopener noreferrer">
+                Términos y Condiciones
+              </a>
+            </label>
           </div>
 
           {error && <div className="modal-error">{error}</div>}

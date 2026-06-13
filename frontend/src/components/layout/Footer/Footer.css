@@ -41,6 +41,7 @@
 .footer-social-btn {
   background: none; border: none; cursor: pointer;
   color: var(--color-primary);
+  font-size: 20px;
   transition: opacity var(--transition-fast);
   display: flex; align-items: center;
 }
@@ -48,8 +49,9 @@
 
 .footer-links {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px 64px;
+  max-width: 360px;
 }
 
 .footer-col { display: flex; flex-direction: column; gap: 14px; }

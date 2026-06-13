@@ -555,7 +555,7 @@ const AdminDashboard: React.FC = () => {
                       </td>
                       <td style={{ color: 'var(--color-on-surface-variant)', fontSize: 14 }}>{u.email}</td>
                       <td>
-                        <span className={`user-role-badge ${u.role}`}>
+                        <span className={`user-role-badge role-${u.role}`}>
                           {u.role === 'admin' ? 'Admin' : 'Usuario'}
                         </span>
                       </td>

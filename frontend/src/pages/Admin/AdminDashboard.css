@@ -290,8 +290,8 @@
   white-space: nowrap;
   line-height: 1.6;
 }
-.user-role-badge.admin { background: color-mix(in srgb, var(--color-primary) 15%, transparent); color: var(--color-primary); }
-.user-role-badge.user { background: var(--color-surface-container-high); color: var(--color-on-surface-variant); }
+.user-role-badge.role-admin { background: color-mix(in srgb, var(--color-primary) 15%, transparent); color: var(--color-primary); }
+.user-role-badge.role-user { background: var(--color-surface-container-high); color: var(--color-on-surface-variant); }
 
 .user-actions { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
 .role-toggle-btn {

@@ -9,6 +9,7 @@ import Explorer from './pages/Explorer/Explorer';
 import CourseDetail from './pages/CourseDetail/CourseDetail';
 import Membership from './pages/Membership/Membership';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import Terms from './pages/Terms/Terms';
 import Landing from './pages/Landing/Landing';
 import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
 import './styles/globals.css';
@@ -46,6 +47,7 @@ const App: React.FC = () => (
             <Route path="explorer" element={<Explorer />} />
             <Route path="courses/:id" element={<CourseDetail />} />
             <Route path="membership" element={<Membership />} />
+            <Route path="terms" element={<Terms />} />
             <Route
               path="admin/*"
               element={<AdminRoute><AdminDashboard /></AdminRoute>}
