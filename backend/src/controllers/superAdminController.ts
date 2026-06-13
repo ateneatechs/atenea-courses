@@ -117,3 +117,32 @@ export const assignAdmin = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getPlatformSettings = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await query(`SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'`);
+    res.json({ platformFeePercent: Number(result.rows[0]?.value ?? '10') });
+  } catch (error) {
+    console.error('GetPlatformSettings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updatePlatformSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { platformFeePercent } = req.body;
+    if (typeof platformFeePercent !== 'number' || platformFeePercent < 0 || platformFeePercent > 100) {
+      res.status(400).json({ message: 'platformFeePercent must be a number between 0 and 100' });
+      return;
+    }
+    await query(
+      `INSERT INTO platform_settings (key, value) VALUES ('platform_fee_percent', $1)
+       ON CONFLICT (key) DO UPDATE SET value = $1`,
+      [String(platformFeePercent)]
+    );
+    res.json({ platformFeePercent });
+  } catch (error) {
+    console.error('UpdatePlatformSettings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
