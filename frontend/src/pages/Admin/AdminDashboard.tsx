@@ -4,6 +4,7 @@ import { Course, Lesson, AdminStats, Category, AdminTab } from '../../types';
 import { useTenant } from '../../contexts/TenantContext';
 import { formatARS } from '../../utils/currency';
 import MembershipTab from './MembershipTab';
+import ToggleSwitch from '../../components/common/ToggleSwitch/ToggleSwitch';
 import './AdminDashboard.css';
 
 const BrandingTab: React.FC = () => {
@@ -228,6 +229,16 @@ const AdminDashboard: React.FC = () => {
     loadCourses(); loadStats();
   };
 
+  const togglePublished = async (courseId: string, is_published: boolean) => {
+    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, is_published } : c));
+    try {
+      await api.patch(`/admin/courses/${courseId}/published`, { is_published });
+    } catch {
+      setCourses(prev => prev.map(c => c.id === courseId ? { ...c, is_published: !is_published } : c));
+      alert('Error al actualizar el estado del curso.');
+    }
+  };
+
   const openLessonForm = (courseId: string, lesson?: Lesson) => {
     setLessonCourseId(courseId);
     if (lesson) {
@@ -413,9 +424,11 @@ const AdminDashboard: React.FC = () => {
                             : c.price ? formatARS(c.price) : 'Gratis'}
                         </td>
                         <td>
-                          <span className={`status-badge ${c.is_published ? 'published' : 'draft'}`}>
-                            {c.is_published ? 'Publicado' : 'Borrador'}
-                          </span>
+                          <ToggleSwitch
+                            checked={c.is_published}
+                            onChange={checked => togglePublished(c.id, checked)}
+                            label={c.is_published ? 'Publicado' : 'Borrador'}
+                          />
                         </td>
                         <td>
                           <div className="table-actions">
