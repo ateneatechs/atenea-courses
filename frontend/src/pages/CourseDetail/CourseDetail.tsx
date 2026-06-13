@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { Course, Lesson, CourseTab } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTenant } from '../../contexts/TenantContext';
 import { useLessonProgress } from './useLessonProgress';
 import YouTubePlayer from './YouTubePlayer';
 import './CourseDetail.css';
@@ -11,6 +12,9 @@ const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const paymentParam = searchParams.get('payment');
+  const { mpConnected } = useTenant();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -32,6 +36,20 @@ const CourseDetail: React.FC = () => {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (paymentParam !== 'success' || !id) return;
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      const { data } = await api.get<Course>(`/courses/${id}`);
+      setCourse(data);
+      if (data.hasAccess || attempts >= 3) {
+        clearInterval(interval);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [paymentParam, id]);
 
   if (loading) {
     return (
@@ -73,6 +91,22 @@ const CourseDetail: React.FC = () => {
             <span className="material-symbols-outlined breadcrumb-sep">chevron_right</span>
             <span className="current">{course.title}</span>
           </nav>
+
+          {paymentParam === 'success' && (
+            <div className="payment-banner payment-banner-success">
+              ¡Pago recibido! Activando tu acceso...
+            </div>
+          )}
+          {paymentParam === 'pending' && (
+            <div className="payment-banner payment-banner-pending">
+              Tu pago está siendo procesado.
+            </div>
+          )}
+          {paymentParam === 'failure' && (
+            <div className="payment-banner payment-banner-failure">
+              El pago no se pudo procesar. Intentá nuevamente.
+            </div>
+          )}
 
           {/* Video Player */}
           <div className="video-player-wrap">
@@ -132,15 +166,20 @@ const CourseDetail: React.FC = () => {
                   {course.is_membership_exclusive ? 'Suscribirse ahora' : 'Obtener Membresía'}
                 </button>
                 {!course.is_membership_exclusive && course.price && isAuthenticated && (
-                  <button className="btn-outline" onClick={async () => {
-                    try {
-                      await api.post('/courses/purchase', { courseId: course.id });
-                      const { data } = await api.get<Course>(`/courses/${id}`);
-                      setCourse(data);
-                    } catch {
-                      alert('Error al comprar. Por favor intenta de nuevo.');
-                    }
-                  }}>
+                  <button
+                    className="btn-outline"
+                    disabled={!mpConnected}
+                    title={!mpConnected ? 'No disponible por el momento' : undefined}
+                    onClick={async () => {
+                      try {
+                        const { data } = await api.post<{ init_point: string }>(`/courses/${course.id}/checkout`);
+                        window.location.href = data.init_point;
+                      } catch (err: unknown) {
+                        const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+                        alert(message || 'Error al iniciar el pago. Por favor intenta de nuevo.');
+                      }
+                    }}
+                  >
                     Comprar por ${course.price}
                   </button>
                 )}
