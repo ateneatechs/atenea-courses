@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Course } from '../../../types';
+import { formatARS } from '../../../utils/currency';
 import './CourseCard.css';
 
 interface Props {
@@ -15,7 +16,7 @@ const CourseCard: React.FC<Props> = ({ course }) => {
   const priceLabel = course.is_membership_exclusive
     ? 'Incluido'
     : course.price
-      ? `$${course.price} USD`
+      ? formatARS(course.price)
       : 'Gratis';
 
   return (

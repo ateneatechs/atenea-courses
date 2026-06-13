@@ -5,6 +5,7 @@ import { Course, Lesson, CourseTab } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLessonProgress } from './useLessonProgress';
 import YouTubePlayer from './YouTubePlayer';
+import { formatARS } from '../../utils/currency';
 import './CourseDetail.css';
 
 const CourseDetail: React.FC = () => {
@@ -125,7 +126,7 @@ const CourseDetail: React.FC = () => {
               <p className="access-gate-text">
                 {course.is_membership_exclusive
                   ? 'Este curso está incluido en la Membresía Lumière. Suscríbete para obtener acceso ilimitado.'
-                  : `Compra este curso por $${course.price} USD o suscríbete para acceder a todos los cursos.`}
+                  : `Compra este curso por ${formatARS(course.price!)} o suscríbete para acceder a todos los cursos.`}
               </p>
               <div className="access-gate-btns">
                 <button className="btn-primary" onClick={() => navigate('/membership')}>
@@ -141,7 +142,7 @@ const CourseDetail: React.FC = () => {
                       alert('Error al comprar. Por favor intenta de nuevo.');
                     }
                   }}>
-                    Comprar por ${course.price}
+                    Comprar por {formatARS(course.price!)}
                   </button>
                 )}
                 {!isAuthenticated && (

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 import { Course, Lesson, AdminStats, Category, AdminTab } from '../../types';
 import { useTenant } from '../../contexts/TenantContext';
+import { formatARS } from '../../utils/currency';
 import './AdminDashboard.css';
 
 const BrandingTab: React.FC = () => {
@@ -351,7 +352,7 @@ const AdminDashboard: React.FC = () => {
                       </td>
                       <td style={{ color: 'var(--color-on-surface-variant)' }}>{c.instructor_name}</td>
                       <td>{c.total_lessons}</td>
-                      <td>{c.is_membership_exclusive ? 'Miembro' : c.price ? `$${c.price}` : 'Gratis'}</td>
+                      <td>{c.is_membership_exclusive ? 'Miembro' : c.price ? formatARS(c.price) : 'Gratis'}</td>
                       <td>
                         <span className={`status-badge ${c.is_published ? 'published' : 'draft'}`}>
                           {c.is_published ? 'Publicado' : 'Borrador'}
@@ -407,7 +408,7 @@ const AdminDashboard: React.FC = () => {
                         <td>
                           {c.is_membership_exclusive
                             ? <span className="status-badge member-only">Miembro</span>
-                            : c.price ? `$${c.price}` : 'Gratis'}
+                            : c.price ? formatARS(c.price) : 'Gratis'}
                         </td>
                         <td>
                           <span className={`status-badge ${c.is_published ? 'published' : 'draft'}`}>
@@ -635,7 +636,7 @@ const AdminDashboard: React.FC = () => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Precio (USD)</label>
+                  <label className="form-label">Precio (ARS)</label>
                   <input className="form-input" type="number" step="0.01" placeholder="Dejar en blanco si es gratis"
                     value={courseFormData.price}
                     onChange={e => setCourseFormData(p => ({ ...p, price: e.target.value }))} />
