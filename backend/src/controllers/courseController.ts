@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { query } from '../config/database';
+import { getValidAccessToken, createPreference } from '../services/mercadopago';
+import { getTenantFrontendUrl } from '../utils/tenantUrl';
 
 const checkAccess = async (
   userId: string,
@@ -13,7 +15,10 @@ const checkAccess = async (
       `SELECT id FROM subscriptions WHERE user_id = $1 AND tenant_id = $2 AND status = 'active' AND ends_at > NOW()`,
       [userId, tenantId]
     ),
-    query('SELECT id FROM course_purchases WHERE user_id = $1 AND course_id = $2', [userId, courseId]),
+    query(
+      `SELECT id FROM course_purchases WHERE user_id = $1 AND course_id = $2 AND payment_status = 'approved'`,
+      [userId, courseId]
+    ),
   ]);
   return sub.rows.length > 0 || purchase.rows.length > 0;
 };
@@ -187,6 +192,11 @@ export const purchaseCourse = async (req: Request, res: Response): Promise<void>
       res.status(404).json({ message: 'Course not found' });
       return;
     }
+    const course = courseResult.rows[0];
+    if (course.price) {
+      res.status(400).json({ message: 'Este curso requiere pago. Usa el checkout.' });
+      return;
+    }
 
     const existing = await query(
       'SELECT id FROM course_purchases WHERE user_id = $1 AND course_id = $2',
@@ -197,9 +207,9 @@ export const purchaseCourse = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const course = courseResult.rows[0];
     const result = await query(
-      'INSERT INTO course_purchases (user_id, course_id, tenant_id, amount) VALUES ($1, $2, $3, $4) RETURNING *',
+      `INSERT INTO course_purchases (user_id, course_id, tenant_id, amount, payment_status)
+       VALUES ($1, $2, $3, $4, 'approved') RETURNING *`,
       [userId, courseId, req.tenantId!, course.price]
     );
     res.status(201).json(result.rows[0]);
@@ -282,6 +292,94 @@ export const updateLessonProgress = async (req: Request, res: Response): Promise
     res.json({ message: 'Progress updated' });
   } catch (error) {
     console.error('UpdateProgress error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const createCheckout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+
+    const courseResult = await query(
+      'SELECT * FROM courses WHERE id = $1 AND tenant_id = $2 AND is_published = true',
+      [id, req.tenantId!]
+    );
+    const course = courseResult.rows[0];
+    if (!course) {
+      res.status(404).json({ message: 'Course not found' });
+      return;
+    }
+    if (!course.price) {
+      res.status(400).json({ message: 'Este curso es gratuito' });
+      return;
+    }
+
+    const existingResult = await query(
+      'SELECT * FROM course_purchases WHERE user_id = $1 AND course_id = $2',
+      [userId, id]
+    );
+    const existing = existingResult.rows[0];
+    if (existing?.payment_status === 'approved') {
+      res.status(400).json({ message: 'Ya tienes acceso a este curso' });
+      return;
+    }
+
+    const tenantResult = await query(
+      'SELECT id, slug, mp_access_token, mp_refresh_token, mp_connected_at FROM tenants WHERE id = $1',
+      [req.tenantId!]
+    );
+    const tenant = tenantResult.rows[0];
+    if (!tenant?.mp_access_token) {
+      res.status(400).json({ message: 'Esta academia no tiene pagos configurados' });
+      return;
+    }
+
+    const settingsResult = await query(
+      `SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'`
+    );
+    const feePercent = Number(settingsResult.rows[0]?.value || '10');
+    const price = Number(course.price);
+    const marketplaceFee = Math.round(price * feePercent) / 100;
+
+    let purchaseId: string;
+    if (existing) {
+      purchaseId = existing.id;
+      await query(
+        `UPDATE course_purchases SET payment_status = 'pending', amount = $1 WHERE id = $2`,
+        [price, purchaseId]
+      );
+    } else {
+      const inserted = await query(
+        `INSERT INTO course_purchases (user_id, course_id, tenant_id, amount, payment_status)
+         VALUES ($1, $2, $3, $4, 'pending') RETURNING id`,
+        [userId, id, req.tenantId!, price]
+      );
+      purchaseId = inserted.rows[0].id;
+    }
+
+    const accessToken = await getValidAccessToken(tenant);
+    const courseUrl = `${getTenantFrontendUrl(tenant.slug)}/courses/${id}`;
+
+    const preference = await createPreference({
+      accessToken,
+      title: course.title,
+      price,
+      marketplaceFee,
+      externalReference: purchaseId,
+      backUrls: {
+        success: `${courseUrl}?payment=success`,
+        failure: `${courseUrl}?payment=failure`,
+        pending: `${courseUrl}?payment=pending`,
+      },
+      notificationUrl: `${process.env.BACKEND_URL}/api/payments/webhook`,
+    });
+
+    await query('UPDATE course_purchases SET mp_preference_id = $1 WHERE id = $2', [preference.id, purchaseId]);
+
+    res.json({ init_point: preference.init_point });
+  } catch (error) {
+    console.error('CreateCheckout error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
