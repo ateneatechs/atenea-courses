@@ -10,7 +10,7 @@ import './Navbar.css';
 const Navbar: React.FC = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { tenantName, logoUrl } = useTenant();
+  const { tenantName, logoUrl, membershipEnabled } = useTenant();
   const navigate = useNavigate();
 
   const [scrolled, setScrolled] = useState(false);
@@ -56,7 +56,9 @@ const Navbar: React.FC = () => {
           <ul className="navbar-links">
             <li><NavLink to="/explorer" className={({ isActive }) => isActive ? 'active' : ''}>Explorar</NavLink></li>
             <li><NavLink to="/explorer?filter=masterclass" className={({ isActive }) => isActive ? 'active' : ''}>Masterclasses</NavLink></li>
-            <li><NavLink to="/membership" className={({ isActive }) => isActive ? 'active' : ''}>Membresía</NavLink></li>
+            {membershipEnabled && (
+              <li><NavLink to="/membership" className={({ isActive }) => isActive ? 'active' : ''}>Membresía</NavLink></li>
+            )}
           </ul>
         </div>
 
@@ -93,14 +95,16 @@ const Navbar: React.FC = () => {
                       Panel de Admin
                     </button>
                   )}
-                  <NavLink
-                    to="/membership"
-                    className="user-dropdown-item"
-                    onClick={() => setShowDropdown(false)}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>workspace_premium</span>
-                    Membresía
-                  </NavLink>
+                  {membershipEnabled && (
+                    <NavLink
+                      to="/membership"
+                      className="user-dropdown-item"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>workspace_premium</span>
+                      Membresía
+                    </NavLink>
+                  )}
                   <div className="user-dropdown-divider" />
                   <button className="user-dropdown-item danger" onClick={handleLogout}>
                     <span className="material-symbols-outlined" style={{ fontSize: 18 }}>logout</span>
