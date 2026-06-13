@@ -17,10 +17,19 @@ const SuperAdminDashboard: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newSlug, setNewSlug] = useState('');
   const [creating, setCreating] = useState(false);
+  const [platformFee, setPlatformFee] = useState<number>(10);
+  const [feeInput, setFeeInput] = useState('10');
+  const [savingFee, setSavingFee] = useState(false);
+  const [feeSaved, setFeeSaved] = useState(false);
 
   const load = async () => {
-    const { data } = await api.get<Tenant[]>('/super-admin/tenants');
-    setTenants(data);
+    const [{ data: tenantsData }, { data: settingsData }] = await Promise.all([
+      api.get<Tenant[]>('/super-admin/tenants'),
+      api.get<{ platformFeePercent: number }>('/super-admin/settings'),
+    ]);
+    setTenants(tenantsData);
+    setPlatformFee(settingsData.platformFeePercent);
+    setFeeInput(String(settingsData.platformFeePercent));
   };
 
   useEffect(() => { load(); }, []);
@@ -46,6 +55,25 @@ const SuperAdminDashboard: React.FC = () => {
     }
   };
 
+  const handleSaveFee = async () => {
+    const value = Number(feeInput);
+    if (Number.isNaN(value) || value < 0 || value > 100) {
+      alert('La comisión debe ser un número entre 0 y 100.');
+      return;
+    }
+    setSavingFee(true);
+    setFeeSaved(false);
+    try {
+      await api.put('/super-admin/settings', { platformFeePercent: value });
+      setPlatformFee(value);
+      setFeeSaved(true);
+    } catch {
+      alert('Error al guardar la comisión.');
+    } finally {
+      setSavingFee(false);
+    }
+  };
+
   return (
     <div className="super-admin">
       <header className="super-admin-header">
@@ -57,6 +85,31 @@ const SuperAdminDashboard: React.FC = () => {
           + Nueva academia
         </button>
       </header>
+
+      <div className="super-admin-table-wrap" style={{ padding: 24, marginBottom: 24 }}>
+        <h2 className="super-admin-title" style={{ fontSize: '1.1rem', marginBottom: 12 }}>
+          Comisión de la plataforma (%)
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step="0.1"
+            value={feeInput}
+            onChange={e => setFeeInput(e.target.value)}
+            className="super-admin-input"
+            style={{ maxWidth: 120 }}
+          />
+          <button className="super-admin-btn-primary" onClick={handleSaveFee} disabled={savingFee}>
+            {savingFee ? 'Guardando...' : 'Guardar'}
+          </button>
+          {feeSaved && <span style={{ color: 'var(--color-success)' }}>Guardado</span>}
+        </div>
+        <p style={{ color: 'var(--color-on-surface-variant)', marginTop: 8, fontSize: '0.85rem' }}>
+          Actual: {platformFee}% sobre cada venta de curso.
+        </p>
+      </div>
 
       <div className="super-admin-table-wrap">
         <table className="super-admin-table">
