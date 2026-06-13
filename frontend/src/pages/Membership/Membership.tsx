@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTenant } from '../../contexts/TenantContext';
+import { formatARS } from '../../utils/currency';
 import api from '../../services/api';
 import './Membership.css';
 
@@ -8,6 +10,7 @@ const Membership: React.FC = () => {
   const { user, isAuthenticated, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
+  const { membershipEnabled, membershipMonthlyPrice, membershipAnnualPrice } = useTenant();
 
   const hasActiveSub = !!user?.subscription;
 
@@ -46,43 +49,86 @@ const Membership: React.FC = () => {
       )}
 
       <div className="membership-plans">
-        {/* Monthly */}
-        <div className="plan-card glass-card">
-          <div className="plan-icon-wrap primary">
-            <span className="material-symbols-outlined plan-icon primary" style={{ fontVariationSettings: "'FILL' 1" }}>
-              auto_awesome
-            </span>
-          </div>
-          <h2 className="plan-name">Suscripción Mensual</h2>
-          <p className="plan-desc">
-            Acceso ilimitado a toda nuestra biblioteca de masterclasses, recursos y eventos en vivo.
-          </p>
-          <div className="plan-price">
-            <span className="plan-price-amount">$49</span>
-            <span className="plan-price-period"> / mes</span>
-          </div>
-          <ul className="plan-features">
-            {[
-              '200+ Lecciones en Video',
-              'Sesiones mensuales de preguntas en vivo',
-              'Acceso al foro de la comunidad',
-              'Certificado de finalización',
-              'Nuevos cursos cada mes',
-            ].map(f => (
-              <li key={f} className="plan-feature">
-                <span className="material-symbols-outlined plan-feature-icon" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <button
-            className="plan-btn-primary"
-            onClick={() => handleSubscribe('monthly')}
-            disabled={loading === 'monthly' || hasActiveSub}
-          >
-            {loading === 'monthly' ? 'Procesando...' : hasActiveSub ? 'Actualmente activo' : 'Comenzar prueba de 7 días gratis'}
-          </button>
-        </div>
+        {membershipEnabled && (
+          <>
+            {/* Monthly */}
+            <div className="plan-card glass-card">
+              <div className="plan-icon-wrap primary">
+                <span className="material-symbols-outlined plan-icon primary" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  auto_awesome
+                </span>
+              </div>
+              <h2 className="plan-name">Suscripción Mensual</h2>
+              <p className="plan-desc">
+                Acceso ilimitado a toda nuestra biblioteca de masterclasses, recursos y eventos en vivo.
+              </p>
+              <div className="plan-price">
+                <span className="plan-price-amount">{formatARS(membershipMonthlyPrice)}</span>
+                <span className="plan-price-period"> / mes</span>
+              </div>
+              <ul className="plan-features">
+                {[
+                  '200+ Lecciones en Video',
+                  'Sesiones mensuales de preguntas en vivo',
+                  'Acceso al foro de la comunidad',
+                  'Certificado de finalización',
+                  'Nuevos cursos cada mes',
+                ].map(f => (
+                  <li key={f} className="plan-feature">
+                    <span className="material-symbols-outlined plan-feature-icon" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                className="plan-btn-primary"
+                onClick={() => handleSubscribe('monthly')}
+                disabled={loading === 'monthly' || hasActiveSub}
+              >
+                {loading === 'monthly' ? 'Procesando...' : hasActiveSub ? 'Actualmente activo' : 'Comenzar prueba de 7 días gratis'}
+              </button>
+            </div>
+
+            {/* Annual */}
+            <div className="plan-card glass-card">
+              <div className="plan-icon-wrap primary">
+                <span className="material-symbols-outlined plan-icon primary" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  calendar_month
+                </span>
+              </div>
+              <h2 className="plan-name">Suscripción Anual</h2>
+              <p className="plan-desc">
+                Acceso ilimitado a toda nuestra biblioteca de masterclasses, recursos y eventos en vivo,
+                con el mejor precio por mes.
+              </p>
+              <div className="plan-price">
+                <span className="plan-price-amount">{formatARS(membershipAnnualPrice)}</span>
+                <span className="plan-price-period"> / año</span>
+              </div>
+              <ul className="plan-features">
+                {[
+                  '200+ Lecciones en Video',
+                  'Sesiones mensuales de preguntas en vivo',
+                  'Acceso al foro de la comunidad',
+                  'Certificado de finalización',
+                  'Nuevos cursos cada mes',
+                ].map(f => (
+                  <li key={f} className="plan-feature">
+                    <span className="material-symbols-outlined plan-feature-icon" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                className="plan-btn-primary"
+                onClick={() => handleSubscribe('annual')}
+                disabled={loading === 'annual' || hasActiveSub}
+              >
+                {loading === 'annual' ? 'Procesando...' : hasActiveSub ? 'Actualmente activo' : 'Suscribirse'}
+              </button>
+            </div>
+          </>
+        )}
 
         {/* Individual */}
         <div className="plan-card glass-card">
@@ -117,6 +163,12 @@ const Membership: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {!membershipEnabled && (
+        <p style={{ textAlign: 'center', color: 'var(--color-on-surface-variant)', marginTop: 16 }}>
+          Esta academia no ofrece membresías por el momento. Explora nuestros cursos individuales.
+        </p>
+      )}
     </div>
   );
 };
