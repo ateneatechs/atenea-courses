@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { Course } from '../../types';
+import { useTenant } from '../../contexts/TenantContext';
+import { formatARS } from '../../utils/currency';
 import './Home.css';
 import '../Membership/Membership.css';
 
@@ -9,6 +11,7 @@ const HERO_IMG = 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w
 
 const Home: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
+  const { membershipEnabled, membershipMonthlyPrice } = useTenant();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -115,6 +118,7 @@ const Home: React.FC = () => {
           </p>
         </div>
         <div className="membership-plans">
+          {membershipEnabled && (
           <div className="plan-card glass-card">
             <div className="plan-icon-wrap primary">
               <span className="material-symbols-outlined plan-icon primary" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -126,7 +130,7 @@ const Home: React.FC = () => {
               Acceso ilimitado a todos los cursos, recursos y contenido nuevo que se agregue cada mes.
             </p>
             <div className="plan-price">
-              <span className="plan-price-amount">$49</span>
+              <span className="plan-price-amount">{formatARS(membershipMonthlyPrice)}</span>
               <span className="plan-price-period"> / mes</span>
             </div>
             <ul className="plan-features">
@@ -147,6 +151,7 @@ const Home: React.FC = () => {
               Comenzar ahora
             </button>
           </div>
+          )}
 
           <div className="plan-card glass-card">
             <div className="plan-icon-wrap secondary">

@@ -166,67 +166,6 @@ export const getCategories = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const createSubscription = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { plan = 'monthly' } = req.body;
-    const userId = req.user!.userId;
-
-    await query(
-      `UPDATE subscriptions SET status = 'cancelled' WHERE user_id = $1 AND tenant_id = $2 AND status = 'active'`,
-      [userId, req.tenantId!]
-    );
-
-    const startsAt = new Date();
-    const endsAt = new Date();
-    plan === 'annual' ? endsAt.setFullYear(endsAt.getFullYear() + 1) : endsAt.setMonth(endsAt.getMonth() + 1);
-
-    const result = await query(
-      `INSERT INTO subscriptions (user_id, tenant_id, plan, status, starts_at, ends_at)
-       VALUES ($1, $2, $3, 'active', $4, $5) RETURNING *`,
-      [userId, req.tenantId!, plan, startsAt, endsAt]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('CreateSubscription error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-export const purchaseCourse = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { courseId } = req.body;
-    const userId = req.user!.userId;
-
-    const courseResult = await query(
-      'SELECT * FROM courses WHERE id = $1 AND tenant_id = $2 AND is_published = true',
-      [courseId, req.tenantId!]
-    );
-    if (courseResult.rows.length === 0) {
-      res.status(404).json({ message: 'Course not found' });
-      return;
-    }
-
-    const existing = await query(
-      'SELECT id FROM course_purchases WHERE user_id = $1 AND course_id = $2',
-      [userId, courseId]
-    );
-    if (existing.rows.length > 0) {
-      res.status(400).json({ message: 'Course already purchased' });
-      return;
-    }
-
-    const course = courseResult.rows[0];
-    const result = await query(
-      'INSERT INTO course_purchases (user_id, course_id, tenant_id, amount) VALUES ($1, $2, $3, $4) RETURNING *',
-      [userId, courseId, req.tenantId!, course.price]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('PurchaseCourse error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
 export const getLessonById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;

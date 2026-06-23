@@ -12,7 +12,11 @@ services:
       - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/02-purchases-progress.sql:/docker-entrypoint-initdb.d/02-purchases.sql:ro
+      - ./database/04-multitenant.sql:/docker-entrypoint-initdb.d/03-multitenant.sql:ro
+      - ./database/05-demo-naza-barber.sql:/docker-entrypoint-initdb.d/04-demo.sql:ro
+      - ./database/06-payments.sql:/docker-entrypoint-initdb.d/05-payments.sql:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U lumiere -d atenea_courses']
       interval: 10s

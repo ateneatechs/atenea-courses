@@ -3,6 +3,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+# Bake the fixed tenant slug into the build for single-client / dedicated-domain deploys.
+ARG VITE_DEFAULT_TENANT=naza-barber
+RUN echo "VITE_DEFAULT_TENANT=$VITE_DEFAULT_TENANT" > .env.production
 RUN npm run build
 
 FROM nginx:alpine

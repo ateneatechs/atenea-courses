@@ -1,4 +1,7 @@
--- Tabla para aislar compras individuales
+-- database/02-purchases-progress.sql
+-- Legacy individual-purchase + lesson progress tables. Run AFTER schema.sql.
+-- NOTE: course access is enforced via course_purchases (schema.sql); user_purchases
+-- is kept only for backwards compatibility.
 CREATE TABLE IF NOT EXISTS user_purchases (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   course_id UUID REFERENCES courses(id) ON DELETE CASCADE,

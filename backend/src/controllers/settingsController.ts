@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { query } from '../config/database';
+import { isPaymentsEnabled } from '../services/mercadopago';
 
 const MEMBERSHIP_DEFAULTS: Record<string, string> = {
   membership_enabled: 'true',
@@ -28,6 +29,7 @@ export const getPublicSettings = async (req: Request, res: Response): Promise<vo
       membership_enabled: raw.membership_enabled === 'true',
       membership_monthly_price: Number(raw.membership_monthly_price),
       membership_annual_price: Number(raw.membership_annual_price),
+      payments_enabled: await isPaymentsEnabled(req.tenantId!),
     });
   } catch (error) {
     console.error('GetPublicSettings error:', error);
@@ -106,6 +108,63 @@ export const updateMembershipSettings = async (req: Request, res: Response): Pro
     res.json({ enabled, monthly_price, annual_price });
   } catch (error) {
     console.error('UpdateMembershipSettings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── Mercado Pago gateway settings (admin) ───────────────────────────
+// The access token is never returned to the client; we only report
+// whether one is configured.
+export const getPaymentSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await query(
+      `SELECT key, value FROM site_settings WHERE tenant_id = $1 AND key IN ('mp_enabled', 'mp_access_token')`,
+      [req.tenantId!]
+    );
+    const settings: Record<string, string | null> = {};
+    result.rows.forEach((r: { key: string; value: string | null }) => { settings[r.key] = r.value; });
+    res.json({
+      enabled: settings.mp_enabled === 'true',
+      has_token: !!(settings.mp_access_token && settings.mp_access_token.trim()),
+    });
+  } catch (error) {
+    console.error('GetPaymentSettings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updatePaymentSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { enabled, access_token } = req.body as { enabled?: boolean; access_token?: string };
+    if (typeof enabled !== 'boolean') {
+      res.status(400).json({ message: 'enabled debe ser un valor booleano' });
+      return;
+    }
+
+    await query(
+      `INSERT INTO site_settings (tenant_id, key, value) VALUES ($1, 'mp_enabled', $2)
+       ON CONFLICT (tenant_id, key) DO UPDATE SET value = $2`,
+      [req.tenantId!, enabled ? 'true' : 'false']
+    );
+
+    // Only overwrite the token when a non-empty value is provided, so the admin
+    // can toggle "enabled" without re-typing the token every time.
+    if (typeof access_token === 'string' && access_token.trim()) {
+      await query(
+        `INSERT INTO site_settings (tenant_id, key, value) VALUES ($1, 'mp_access_token', $2)
+         ON CONFLICT (tenant_id, key) DO UPDATE SET value = $2`,
+        [req.tenantId!, access_token.trim()]
+      );
+    }
+
+    const result = await query(
+      `SELECT value FROM site_settings WHERE tenant_id = $1 AND key = 'mp_access_token'`,
+      [req.tenantId!]
+    );
+    const token = result.rows[0]?.value as string | undefined;
+    res.json({ enabled, has_token: !!(token && token.trim()) });
+  } catch (error) {
+    console.error('UpdatePaymentSettings error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

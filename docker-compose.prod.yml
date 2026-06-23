@@ -1,0 +1,96 @@
+name: atenea-courses
+
+# Production stack for a single-client deploy (Naza Barber) on a Hostinger VPS.
+# Reads secrets from a root .env file (see .env.example). Bring up with:
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: atenea-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: atenea_courses
+      POSTGRES_USER: atenea
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Schema + migrations run in order on first boot (empty volume only).
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/02-purchases-progress.sql:/docker-entrypoint-initdb.d/02-purchases.sql:ro
+      - ./database/04-multitenant.sql:/docker-entrypoint-initdb.d/03-multitenant.sql:ro
+      - ./database/05-demo-naza-barber.sql:/docker-entrypoint-initdb.d/04-demo.sql:ro
+      - ./database/06-payments.sql:/docker-entrypoint-initdb.d/05-payments.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U atenea -d atenea_courses']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: atenea-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://atenea:${POSTGRES_PASSWORD}@postgres:5432/atenea_courses
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      PORT: 3000
+      # Public URLs used for Mercado Pago redirect + webhook callbacks.
+      FRONTEND_URL: https://${DOMAIN:?set DOMAIN in .env}
+      BACKEND_PUBLIC_URL: https://${DOMAIN}
+      # Optional global Mercado Pago token (per-tenant token in the admin overrides this).
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  seed:
+    image: node:20-alpine
+    container_name: atenea-seed
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    environment:
+      DATABASE_URL: postgres://atenea:${POSTGRES_PASSWORD}@postgres:5432/atenea_courses
+    command: sh -c "npm ci && npx ts-node --transpile-only src/seed.ts"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_DEFAULT_TENANT: ${DEFAULT_TENANT:-naza-barber}
+    container_name: atenea-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    container_name: atenea-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      # Let's Encrypt certs (created on the host with certbot — see DEPLOY.md).
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  postgres_data:
+  uploads_data:
+  certbot_webroot:

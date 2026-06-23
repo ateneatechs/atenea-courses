@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTenant } from '../../../contexts/TenantContext';
 import './LoginModal.css';
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 
 const LoginModal: React.FC<Props> = ({ onClose, onSwitchToRegister }) => {
   const { login } = useAuth();
+  const { tenantName } = useTenant();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -38,7 +40,7 @@ const LoginModal: React.FC<Props> = ({ onClose, onSwitchToRegister }) => {
 
         <div className="modal-header">
           <span className="modal-label">Bienvenido de vuelta</span>
-          <h2 className="modal-title">Inicia sesión en Lumière</h2>
+          <h2 className="modal-title">Inicia sesión en {tenantName || 'tu academia'}</h2>
         </div>
 
         <form className="modal-form" onSubmit={handleSubmit}>

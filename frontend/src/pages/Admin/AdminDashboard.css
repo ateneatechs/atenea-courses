@@ -282,6 +282,22 @@
 }
 
 /* Users table */
+/* Users table: keep compact columns at content width so the role column
+   can't be stretched by leftover space. Nombre/Correo absorb the slack. */
+.users-table td:nth-child(3),  /* Rol */
+.users-table td:nth-child(4),  /* Suscripción */
+.users-table td:nth-child(5),  /* Registrado */
+.users-table td:nth-child(6),  /* Acciones */
+.users-table th:nth-child(3),
+.users-table th:nth-child(4),
+.users-table th:nth-child(5),
+.users-table th:nth-child(6) {
+  width: 1%;
+  white-space: nowrap;
+}
+.users-table td:nth-child(1) { white-space: nowrap; }     /* Nombre */
+.users-table td:nth-child(2) { word-break: break-word; }  /* Correo: wrap long emails */
+
 .user-role-badge {
   display: inline-block;
   padding: 3px 10px;

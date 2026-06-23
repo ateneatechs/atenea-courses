@@ -9,6 +9,7 @@ interface TenantSettings {
   membershipEnabled: boolean;
   membershipMonthlyPrice: number;
   membershipAnnualPrice: number;
+  paymentsEnabled: boolean;
   refreshSettings: () => Promise<void>;
 }
 
@@ -24,6 +25,7 @@ export const TenantProvider: React.FC<{
   const [membershipEnabled, setMembershipEnabled] = useState(true);
   const [membershipMonthlyPrice, setMembershipMonthlyPrice] = useState(15000);
   const [membershipAnnualPrice, setMembershipAnnualPrice] = useState(150000);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
 
   const refreshSettings = useCallback(async () => {
     try {
@@ -33,12 +35,14 @@ export const TenantProvider: React.FC<{
         membership_enabled: boolean;
         membership_monthly_price: number;
         membership_annual_price: number;
+        payments_enabled: boolean;
       }>('/settings/public');
       setTenantName(data.site_name || tenantSlug);
       setLogoUrl(data.logo_url);
       setMembershipEnabled(data.membership_enabled);
       setMembershipMonthlyPrice(data.membership_monthly_price);
       setMembershipAnnualPrice(data.membership_annual_price);
+      setPaymentsEnabled(!!data.payments_enabled);
       setNotFound(false);
     } catch (err: unknown) {
       if ((err as { response?: { status?: number } }).response?.status === 404) {
@@ -53,6 +57,7 @@ export const TenantProvider: React.FC<{
     <TenantContext.Provider value={{
       tenantSlug, tenantName, logoUrl, notFound,
       membershipEnabled, membershipMonthlyPrice, membershipAnnualPrice,
+      paymentsEnabled,
       refreshSettings,
     }}>
       {children}

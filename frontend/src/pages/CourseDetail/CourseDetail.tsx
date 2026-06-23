@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { Course, Lesson, CourseTab } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTenant } from '../../contexts/TenantContext';
 import { useLessonProgress } from './useLessonProgress';
 import YouTubePlayer from './YouTubePlayer';
 import { formatARS } from '../../utils/currency';
@@ -11,7 +12,9 @@ import './CourseDetail.css';
 const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
+  const { paymentsEnabled } = useTenant();
   const navigate = useNavigate();
+  const [buying, setBuying] = useState(false);
 
   const [course, setCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -125,7 +128,7 @@ const CourseDetail: React.FC = () => {
               <h2 className="access-gate-title">Desbloquear este curso</h2>
               <p className="access-gate-text">
                 {course.is_membership_exclusive
-                  ? 'Este curso está incluido en la Membresía Lumière. Suscríbete para obtener acceso ilimitado.'
+                  ? 'Este curso está incluido en la membresía. Suscríbete para obtener acceso ilimitado.'
                   : `Compra este curso por ${formatARS(course.price!)} o suscríbete para acceder a todos los cursos.`}
               </p>
               <div className="access-gate-btns">
@@ -133,16 +136,21 @@ const CourseDetail: React.FC = () => {
                   {course.is_membership_exclusive ? 'Suscribirse ahora' : 'Obtener Membresía'}
                 </button>
                 {!course.is_membership_exclusive && course.price && isAuthenticated && (
-                  <button className="btn-outline" onClick={async () => {
+                  <button className="btn-outline" disabled={buying} onClick={async () => {
+                    if (!paymentsEnabled) {
+                      alert('Los pagos no están disponibles en este momento. Intenta más tarde.');
+                      return;
+                    }
+                    setBuying(true);
                     try {
-                      await api.post('/courses/purchase', { courseId: course.id });
-                      const { data } = await api.get<Course>(`/courses/${id}`);
-                      setCourse(data);
+                      const { data } = await api.post<{ checkoutUrl: string }>('/payments/course', { courseId: course.id });
+                      window.location.href = data.checkoutUrl;
                     } catch {
-                      alert('Error al comprar. Por favor intenta de nuevo.');
+                      alert('Error al iniciar el pago. Por favor intenta de nuevo.');
+                      setBuying(false);
                     }
                   }}>
-                    Comprar por {formatARS(course.price!)}
+                    {buying ? 'Redirigiendo a Mercado Pago...' : `Comprar por ${formatARS(course.price!)}`}
                   </button>
                 )}
                 {!isAuthenticated && (

@@ -7,23 +7,25 @@ import api from '../../services/api';
 import './Membership.css';
 
 const Membership: React.FC = () => {
-  const { user, isAuthenticated, refreshUser } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
-  const { membershipEnabled, membershipMonthlyPrice, membershipAnnualPrice } = useTenant();
+  const { membershipEnabled, membershipMonthlyPrice, membershipAnnualPrice, paymentsEnabled } = useTenant();
 
   const hasActiveSub = !!user?.subscription;
 
   const handleSubscribe = async (plan: 'monthly' | 'annual') => {
     if (!isAuthenticated) { navigate('/'); return; }
+    if (!paymentsEnabled) {
+      alert('Los pagos no están disponibles en este momento. Intenta más tarde.');
+      return;
+    }
     setLoading(plan);
     try {
-      await api.post('/courses/subscribe', { plan });
-      await refreshUser();
-      alert(`¡Suscripción al plan ${plan} exitosa!`);
+      const { data } = await api.post<{ checkoutUrl: string }>('/payments/subscription', { plan });
+      window.location.href = data.checkoutUrl;
     } catch {
-      alert('Error al suscribirse. Por favor intenta de nuevo.');
-    } finally {
+      alert('Error al iniciar el pago. Por favor intenta de nuevo.');
       setLoading(null);
     }
   };
@@ -85,7 +87,7 @@ const Membership: React.FC = () => {
                 onClick={() => handleSubscribe('monthly')}
                 disabled={loading === 'monthly' || hasActiveSub}
               >
-                {loading === 'monthly' ? 'Procesando...' : hasActiveSub ? 'Actualmente activo' : 'Comenzar prueba de 7 días gratis'}
+                {loading === 'monthly' ? 'Redirigiendo a Mercado Pago...' : hasActiveSub ? 'Actualmente activo' : 'Suscribirme'}
               </button>
             </div>
 
@@ -124,7 +126,7 @@ const Membership: React.FC = () => {
                 onClick={() => handleSubscribe('annual')}
                 disabled={loading === 'annual' || hasActiveSub}
               >
-                {loading === 'annual' ? 'Procesando...' : hasActiveSub ? 'Actualmente activo' : 'Suscribirse'}
+                {loading === 'annual' ? 'Redirigiendo a Mercado Pago...' : hasActiveSub ? 'Actualmente activo' : 'Suscribirme'}
               </button>
             </div>
           </>

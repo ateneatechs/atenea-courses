@@ -4,6 +4,7 @@ import { Course, Lesson, AdminStats, Category, AdminTab } from '../../types';
 import { useTenant } from '../../contexts/TenantContext';
 import { formatARS } from '../../utils/currency';
 import MembershipTab from './MembershipTab';
+import PaymentsTab from './PaymentsTab';
 import ToggleSwitch from '../../components/common/ToggleSwitch/ToggleSwitch';
 import './AdminDashboard.css';
 
@@ -293,6 +294,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'users', icon: 'group', label: 'Usuarios' },
     { id: 'branding', icon: 'palette', label: 'Personalización' },
     { id: 'membership', icon: 'workspace_premium', label: 'Membresías' },
+    { id: 'payments', icon: 'payments', label: 'Pagos' },
   ];
 
   return (
@@ -544,7 +546,7 @@ const AdminDashboard: React.FC = () => {
               </span>
             </div>
             <div className="admin-table-wrap" style={{ marginTop: 24 }}>
-              <table className="admin-table">
+              <table className="admin-table users-table">
                 <thead><tr>
                   <th>Nombre</th>
                   <th>Correo</th>
@@ -625,6 +627,15 @@ const AdminDashboard: React.FC = () => {
             <h1 className="admin-page-title">Membresías</h1>
             <p className="admin-page-subtitle">Configura los planes de suscripción de tu academia.</p>
             <MembershipTab />
+          </>
+        )}
+
+        {/* ── PAYMENTS ── */}
+        {tab === 'payments' && (
+          <>
+            <h1 className="admin-page-title">Pagos</h1>
+            <p className="admin-page-subtitle">Conecta Mercado Pago para cobrar suscripciones y cursos.</p>
+            <PaymentsTab />
           </>
         )}
       </main>
