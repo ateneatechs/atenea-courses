@@ -30,6 +30,9 @@ export interface Course {
   lessons?: Lesson[];
   hasAccess?: boolean;
   completed_lesson_ids?: string[];
+  purchased_at?: string;
+  access_type?: 'purchase' | 'membership';
+  completed?: boolean;
 }
 
 export interface Lesson {

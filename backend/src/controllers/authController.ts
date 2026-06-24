@@ -3,9 +3,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database';
 import { JwtPayload } from '../types';
+import { JWT_SECRET } from '../config/jwt';
 
 const signToken = (payload: JwtPayload) =>
-  jwt.sign(payload, process.env.JWT_SECRET || 'fallback', { expiresIn: '7d' });
+  jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {

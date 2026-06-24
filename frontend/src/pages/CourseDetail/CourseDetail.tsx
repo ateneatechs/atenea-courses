@@ -7,6 +7,7 @@ import { useTenant } from '../../contexts/TenantContext';
 import { useLessonProgress } from './useLessonProgress';
 import YouTubePlayer from './YouTubePlayer';
 import { formatARS } from '../../utils/currency';
+import { downloadCourseCertificate } from '../../utils/certificate';
 import './CourseDetail.css';
 
 const EMPTY_LESSONS: Lesson[] = [];
@@ -22,6 +23,7 @@ const CourseDetail: React.FC = () => {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [activeTab, setActiveTab] = useState<CourseTab>('overview');
   const [loading, setLoading] = useState(true);
+  const [downloadingCert, setDownloadingCert] = useState(false);
 
   // Must be before any early returns — Rules of Hooks
   const { completedIds, progressMap, saveProgress, markComplete, toggleComplete } = useLessonProgress(course?.lessons || EMPTY_LESSONS);
@@ -86,6 +88,19 @@ const CourseDetail: React.FC = () => {
 
   const completedCount = completedIds.size;
   const progressPct = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
+  const courseCompleted = lessons.length > 0 && completedCount === lessons.length;
+
+  const handleDownloadCertificate = async () => {
+    if (!course) return;
+    setDownloadingCert(true);
+    try {
+      await downloadCourseCertificate(course.id, course.title);
+    } catch {
+      alert('No se pudo generar el diploma. Intenta de nuevo en unos momentos.');
+    } finally {
+      setDownloadingCert(false);
+    }
+  };
 
   return (
     <div className="course-detail">
@@ -320,6 +335,21 @@ const CourseDetail: React.FC = () => {
             <div className="progress-bar">
               <div className="progress-fill" style={{ width: `${progressPct}%` }} />
             </div>
+
+            {courseCompleted && (
+              <button
+                className="btn-primary"
+                onClick={handleDownloadCertificate}
+                disabled={downloadingCert}
+                style={{
+                  width: '100%', marginTop: 16, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: 8, opacity: downloadingCert ? 0.7 : 1,
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>workspace_premium</span>
+                {downloadingCert ? 'Generando diploma...' : 'Descargar Diploma'}
+              </button>
+            )}
           </div>
 
           {Object.entries(sections).map(([secNum, sec]) => (

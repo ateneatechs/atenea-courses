@@ -95,6 +95,14 @@ const Navbar: React.FC = () => {
                       Panel de Admin
                     </button>
                   )}
+                  <NavLink
+                    to="/mis-cursos"
+                    className="user-dropdown-item"
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>video_library</span>
+                    Mis Cursos
+                  </NavLink>
                   {membershipEnabled && (
                     <NavLink
                       to="/membership"

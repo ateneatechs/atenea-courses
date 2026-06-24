@@ -6,6 +6,7 @@ import ToggleSwitch from '../../components/common/ToggleSwitch/ToggleSwitch';
 interface PaymentSettings {
   enabled: boolean;
   has_token: boolean;
+  has_webhook_secret: boolean;
 }
 
 const labelStyle: React.CSSProperties = {
@@ -17,6 +18,7 @@ const PaymentsTab: React.FC = () => {
   const { refreshSettings } = useTenant();
   const [settings, setSettings] = useState<PaymentSettings | null>(null);
   const [token, setToken] = useState('');
+  const [webhookSecret, setWebhookSecret] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -29,11 +31,13 @@ const PaymentsTab: React.FC = () => {
     setSaving(true);
     setSuccess(false);
     try {
-      const body: { enabled: boolean; access_token?: string } = { enabled: settings.enabled };
+      const body: { enabled: boolean; access_token?: string; webhook_secret?: string } = { enabled: settings.enabled };
       if (token.trim()) body.access_token = token.trim();
+      if (webhookSecret.trim()) body.webhook_secret = webhookSecret.trim();
       const { data } = await api.put<PaymentSettings>('/admin/payment-settings', body);
       setSettings(data);
       setToken('');
+      setWebhookSecret('');
       await refreshSettings();
       setSuccess(true);
     } catch {
@@ -98,6 +102,22 @@ const PaymentsTab: React.FC = () => {
           placeholder={settings.has_token ? '•••••••••••• (sin cambios)' : 'APP_USR-... o TEST-...'}
           value={token}
           onChange={e => setToken(e.target.value)}
+        />
+      </label>
+
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <span style={labelStyle}>Firma secreta del Webhook (opcional, recomendado)</span>
+        <p style={{ color: 'var(--color-on-surface-variant)', fontSize: 'var(--text-body-sm, 13px)', margin: 0 }}>
+          La encontrás en tu panel de Mercado Pago → Tus integraciones → Webhooks → "Firma secreta".
+          Si la cargás, el sistema verifica que las notificaciones de pago realmente vengan de Mercado Pago.
+        </p>
+        <input
+          className="form-input"
+          type="password"
+          autoComplete="off"
+          placeholder={settings.has_webhook_secret ? '•••••••••••• (sin cambios)' : 'Sin configurar'}
+          value={webhookSecret}
+          onChange={e => setWebhookSecret(e.target.value)}
         />
       </label>
 

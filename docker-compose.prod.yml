@@ -43,6 +43,12 @@ services:
       BACKEND_PUBLIC_URL: https://${DOMAIN}
       # Optional global Mercado Pago token (per-tenant token in the admin overrides this).
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      # Gmail SMTP for order-confirmation emails. EMAIL_PASS must be a Gmail App Password.
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-465}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
     volumes:
       - uploads_data:/app/uploads
     depends_on:

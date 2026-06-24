@@ -4,7 +4,10 @@ import {
   getTenantAccessToken,
   createPreference,
   getPayment,
+  getTenantWebhookSecret,
+  verifyMpWebhookSignature,
 } from '../services/mercadopago';
+import { sendOrderConfirmationEmail } from '../services/email';
 
 const FRONTEND_URL = () => process.env.FRONTEND_URL || 'http://localhost:5173';
 const BACKEND_PUBLIC_URL = () => process.env.BACKEND_PUBLIC_URL || 'http://localhost:3000';
@@ -198,12 +201,18 @@ const processMpPayment = async (
   }
 
   // Grant access
+  let itemTitle = row.type === 'subscription'
+    ? (row.plan === 'annual' ? 'Membresía Anual' : 'Membresía Mensual')
+    : '';
+
   if (row.type === 'course') {
     await query(
       `INSERT INTO course_purchases (user_id, course_id, tenant_id, amount)
        VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, course_id) DO NOTHING`,
       [row.user_id, row.course_id, tenantId, row.amount]
     );
+    const courseResult = await query('SELECT title FROM courses WHERE id = $1', [row.course_id]);
+    itemTitle = courseResult.rows[0]?.title || 'Curso';
   } else if (row.type === 'subscription') {
     await query(
       `UPDATE subscriptions SET status = 'cancelled'
@@ -225,6 +234,24 @@ const processMpPayment = async (
     `UPDATE payments SET status = 'approved', mp_payment_id = $1, processed_at = NOW() WHERE id = $2`,
     [String(mp.id), paymentRowId]
   );
+
+  const [userResult, tenantResult] = await Promise.all([
+    query('SELECT email, name FROM users WHERE id = $1', [row.user_id]),
+    query('SELECT name FROM tenants WHERE id = $1', [tenantId]),
+  ]);
+  const buyer = userResult.rows[0];
+  if (buyer) {
+    void sendOrderConfirmationEmail({
+      to: buyer.email,
+      userName: buyer.name,
+      tenantName: tenantResult.rows[0]?.name || 'Atenea',
+      itemTitle,
+      amount: Number(row.amount),
+      paymentId: String(mp.id),
+      purchasedAt: new Date(),
+    });
+  }
+
   return 'approved';
 };
 
@@ -246,6 +273,21 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
       (req.query.id as string);
 
     if (!tenantId || !mpPaymentId) return;
+
+    // If the tenant configured a webhook secret (Mercado Pago dashboard → Webhooks →
+    // "Firma secreta"), require a valid x-signature. Tenants without one configured
+    // still go through processMpPayment's own re-verification against MP's API below —
+    // this header check is defense-in-depth, not the only gate.
+    const webhookSecret = await getTenantWebhookSecret(tenantId);
+    if (webhookSecret) {
+      const valid = verifyMpWebhookSignature({
+        signatureHeader: req.headers['x-signature'] as string | undefined,
+        requestId: req.headers['x-request-id'] as string | undefined,
+        dataId: String(mpPaymentId),
+        secret: webhookSecret,
+      });
+      if (!valid) return;
+    }
 
     const token = await getTenantAccessToken(tenantId);
     if (!token) return;

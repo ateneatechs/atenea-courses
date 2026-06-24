@@ -8,6 +8,7 @@ import Home from './pages/Home/Home';
 import Explorer from './pages/Explorer/Explorer';
 import CourseDetail from './pages/CourseDetail/CourseDetail';
 import Membership from './pages/Membership/Membership';
+import MyCourses from './pages/MyCourses/MyCourses';
 import PaymentResult from './pages/PaymentResult/PaymentResult';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import Landing from './pages/Landing/Landing';
@@ -47,6 +48,7 @@ const App: React.FC = () => (
             <Route path="explorer" element={<Explorer />} />
             <Route path="courses/:id" element={<CourseDetail />} />
             <Route path="membership" element={<Membership />} />
+            <Route path="mis-cursos" element={<MyCourses />} />
             <Route path="payment/result" element={<PaymentResult />} />
             <Route
               path="admin/*"

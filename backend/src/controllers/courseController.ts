@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
+import path from 'path';
 import { query } from '../config/database';
+import { renderCertificatePdf } from '../services/certificate';
 
 const checkAccess = async (
   userId: string,
@@ -129,6 +132,123 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
   } catch (error) {
     console.error('GetCourseById error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getMyCourses = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const tenantId = req.tenantId!;
+
+    const subResult = await query(
+      `SELECT id FROM subscriptions WHERE user_id = $1 AND tenant_id = $2 AND status = 'active' AND ends_at > NOW()`,
+      [userId, tenantId]
+    );
+    const hasActiveSubscription = subResult.rows.length > 0;
+
+    const result = await query(
+      `SELECT c.*, cat.name AS category_name, cp.purchased_at,
+              CASE WHEN cp.id IS NOT NULL THEN 'purchase' ELSE 'membership' END AS access_type,
+              COALESCE(lc.total, 0) AS lesson_count,
+              COALESCE(pc.completed, 0) AS completed_lesson_count
+       FROM courses c
+       LEFT JOIN categories cat ON c.category_id = cat.id
+       LEFT JOIN course_purchases cp ON cp.course_id = c.id AND cp.user_id = $1
+       LEFT JOIN (
+         SELECT course_id, COUNT(*) AS total FROM lessons GROUP BY course_id
+       ) lc ON lc.course_id = c.id
+       LEFT JOIN (
+         SELECT course_id, COUNT(*) AS completed FROM lesson_progress
+         WHERE user_id = $1 AND completed = true GROUP BY course_id
+       ) pc ON pc.course_id = c.id
+       WHERE c.tenant_id = $2 AND c.is_published = true
+         AND (cp.id IS NOT NULL OR $3 = true)
+       ORDER BY cp.purchased_at DESC NULLS LAST, c.created_at DESC`,
+      [userId, tenantId, hasActiveSubscription]
+    );
+
+    const courses = result.rows.map(({ lesson_count, completed_lesson_count, ...course }) => ({
+      ...course,
+      completed: Number(lesson_count) > 0 && Number(completed_lesson_count) >= Number(lesson_count),
+    }));
+
+    res.json({ courses, hasActiveSubscription });
+  } catch (error) {
+    console.error('GetMyCourses error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getCourseCertificate = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+    const tenantId = req.tenantId!;
+
+    const courseResult = await query(
+      'SELECT title, instructor_name FROM courses WHERE id = $1 AND tenant_id = $2',
+      [id, tenantId]
+    );
+    if (courseResult.rows.length === 0) {
+      res.status(404).json({ message: 'Curso no encontrado' });
+      return;
+    }
+    const course = courseResult.rows[0];
+
+    // Completion is proven by lesson_progress rows, which can only be written
+    // while the user had access (see updateLessonProgress) — so we don't need
+    // to re-check current access here. This lets a diploma stay downloadable
+    // even after a membership lapses, matching "para siempre" course access.
+    const [totalResult, progressResult] = await Promise.all([
+      query('SELECT COUNT(*)::int AS total FROM lessons WHERE course_id = $1', [id]),
+      query(
+        `SELECT COUNT(*)::int AS completed, MAX(updated_at) AS last_completed_at
+         FROM lesson_progress WHERE course_id = $1 AND user_id = $2 AND completed = true`,
+        [id, userId]
+      ),
+    ]);
+    const total = totalResult.rows[0].total;
+    const { completed, last_completed_at } = progressResult.rows[0];
+
+    if (total === 0 || completed < total) {
+      res.status(400).json({ message: 'Todavía no completaste todas las lecciones de este curso.' });
+      return;
+    }
+
+    const [userResult, tenantResult, logoResult] = await Promise.all([
+      query('SELECT name FROM users WHERE id = $1', [userId]),
+      query('SELECT name FROM tenants WHERE id = $1', [tenantId]),
+      query(`SELECT value FROM site_settings WHERE tenant_id = $1 AND key = 'logo_url'`, [tenantId]),
+    ]);
+
+    const studentName = userResult.rows[0]?.name || 'Estudiante';
+    const tenantName = tenantResult.rows[0]?.name || 'Atenea';
+    const logoUrl = logoResult.rows[0]?.value as string | undefined;
+    const logoPath = logoUrl ? path.join(process.cwd(), logoUrl.replace(/^\//, '')) : null;
+
+    const certificateId = crypto
+      .createHash('sha256')
+      .update(`${userId}:${id}`)
+      .digest('hex')
+      .slice(0, 10)
+      .toUpperCase();
+
+    const safeFilename = `Diploma - ${course.title}`.replace(/[\\/:*?"<>|]/g, '');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.pdf"`);
+
+    renderCertificatePdf(res, {
+      studentName,
+      courseTitle: course.title,
+      instructorName: course.instructor_name,
+      tenantName,
+      logoPath,
+      completedAt: last_completed_at ? new Date(last_completed_at) : new Date(),
+      certificateId,
+    });
+  } catch (error) {
+    console.error('GetCourseCertificate error:', error);
+    res.status(500).json({ message: 'No se pudo generar el certificado.' });
   }
 };
 

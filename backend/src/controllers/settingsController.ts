@@ -118,7 +118,7 @@ export const updateMembershipSettings = async (req: Request, res: Response): Pro
 export const getPaymentSettings = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await query(
-      `SELECT key, value FROM site_settings WHERE tenant_id = $1 AND key IN ('mp_enabled', 'mp_access_token')`,
+      `SELECT key, value FROM site_settings WHERE tenant_id = $1 AND key IN ('mp_enabled', 'mp_access_token', 'mp_webhook_secret')`,
       [req.tenantId!]
     );
     const settings: Record<string, string | null> = {};
@@ -126,6 +126,7 @@ export const getPaymentSettings = async (req: Request, res: Response): Promise<v
     res.json({
       enabled: settings.mp_enabled === 'true',
       has_token: !!(settings.mp_access_token && settings.mp_access_token.trim()),
+      has_webhook_secret: !!(settings.mp_webhook_secret && settings.mp_webhook_secret.trim()),
     });
   } catch (error) {
     console.error('GetPaymentSettings error:', error);
@@ -135,7 +136,9 @@ export const getPaymentSettings = async (req: Request, res: Response): Promise<v
 
 export const updatePaymentSettings = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { enabled, access_token } = req.body as { enabled?: boolean; access_token?: string };
+    const { enabled, access_token, webhook_secret } = req.body as {
+      enabled?: boolean; access_token?: string; webhook_secret?: string;
+    };
     if (typeof enabled !== 'boolean') {
       res.status(400).json({ message: 'enabled debe ser un valor booleano' });
       return;
@@ -147,8 +150,8 @@ export const updatePaymentSettings = async (req: Request, res: Response): Promis
       [req.tenantId!, enabled ? 'true' : 'false']
     );
 
-    // Only overwrite the token when a non-empty value is provided, so the admin
-    // can toggle "enabled" without re-typing the token every time.
+    // Only overwrite the token/secret when a non-empty value is provided, so the
+    // admin can toggle "enabled" without re-typing them every time.
     if (typeof access_token === 'string' && access_token.trim()) {
       await query(
         `INSERT INTO site_settings (tenant_id, key, value) VALUES ($1, 'mp_access_token', $2)
@@ -156,13 +159,25 @@ export const updatePaymentSettings = async (req: Request, res: Response): Promis
         [req.tenantId!, access_token.trim()]
       );
     }
+    if (typeof webhook_secret === 'string' && webhook_secret.trim()) {
+      await query(
+        `INSERT INTO site_settings (tenant_id, key, value) VALUES ($1, 'mp_webhook_secret', $2)
+         ON CONFLICT (tenant_id, key) DO UPDATE SET value = $2`,
+        [req.tenantId!, webhook_secret.trim()]
+      );
+    }
 
     const result = await query(
-      `SELECT value FROM site_settings WHERE tenant_id = $1 AND key = 'mp_access_token'`,
+      `SELECT key, value FROM site_settings WHERE tenant_id = $1 AND key IN ('mp_access_token', 'mp_webhook_secret')`,
       [req.tenantId!]
     );
-    const token = result.rows[0]?.value as string | undefined;
-    res.json({ enabled, has_token: !!(token && token.trim()) });
+    const values: Record<string, string | null> = {};
+    result.rows.forEach((r: { key: string; value: string | null }) => { values[r.key] = r.value; });
+    res.json({
+      enabled,
+      has_token: !!(values.mp_access_token && values.mp_access_token.trim()),
+      has_webhook_secret: !!(values.mp_webhook_secret && values.mp_webhook_secret.trim()),
+    });
   } catch (error) {
     console.error('UpdatePaymentSettings error:', error);
     res.status(500).json({ message: 'Server error' });

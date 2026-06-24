@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { JwtPayload } from '../types';
+import { JWT_SECRET } from '../config/jwt';
 
 export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
   try {
@@ -10,7 +11,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
       return;
     }
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback') as JwtPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     req.user = decoded;
     next();
   } catch {
@@ -23,7 +24,7 @@ export const optionalAuth = (req: Request, _res: Response, next: NextFunction): 
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback') as JwtPayload;
+      const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
       req.user = decoded;
     }
   } catch {

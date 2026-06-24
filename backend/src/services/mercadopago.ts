@@ -1,5 +1,6 @@
 // Mercado Pago integration via the public REST API (no SDK dependency).
 // Docs: https://www.mercadopago.com.ar/developers/es/reference
+import crypto from 'crypto';
 import { query } from '../config/database';
 
 const MP_API = 'https://api.mercadopago.com';
@@ -28,6 +29,53 @@ export const getTenantAccessToken = async (tenantId: string): Promise<string | n
 /** True when the tenant has Mercado Pago configured and enabled. */
 export const isPaymentsEnabled = async (tenantId: string): Promise<boolean> => {
   return (await getTenantAccessToken(tenantId)) !== null;
+};
+
+/**
+ * Resolve the per-tenant Mercado Pago webhook signing secret (used to verify
+ * the `x-signature` header). Returns null when not configured — callers must
+ * decide how to handle that (the webhook still re-verifies payment state via
+ * the MP API regardless, so this is a defense-in-depth check, not the only one).
+ */
+export const getTenantWebhookSecret = async (tenantId: string): Promise<string | null> => {
+  const result = await query(
+    `SELECT value FROM site_settings WHERE tenant_id = $1 AND key = 'mp_webhook_secret'`,
+    [tenantId]
+  );
+  const secret = (result.rows[0]?.value || '').trim();
+  return secret || null;
+};
+
+/**
+ * Verify MP's `x-signature` header (docs: "Verificar firma de notificaciones webhook").
+ * Header format: `ts=<unix_ts>,v1=<hex_hmac>`. The manifest hashed is
+ * `id:<dataId>;request-id:<x-request-id>;ts:<ts>;` (request-id may be absent for older notifications).
+ */
+export const verifyMpWebhookSignature = (args: {
+  signatureHeader: string | undefined;
+  requestId: string | undefined;
+  dataId: string;
+  secret: string;
+}): boolean => {
+  if (!args.signatureHeader) return false;
+
+  const parts: Record<string, string> = {};
+  for (const segment of args.signatureHeader.split(',')) {
+    const [key, value] = segment.split('=').map(s => s.trim());
+    if (key && value) parts[key] = value;
+  }
+  const ts = parts.ts;
+  const v1 = parts.v1;
+  if (!ts || !v1) return false;
+
+  const manifest = `id:${args.dataId.toLowerCase()};${args.requestId ? `request-id:${args.requestId};` : ''}ts:${ts};`;
+  const expected = crypto.createHmac('sha256', args.secret).update(manifest).digest('hex');
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(v1, 'hex'));
+  } catch {
+    return false;
+  }
 };
 
 export interface PreferenceItem {
