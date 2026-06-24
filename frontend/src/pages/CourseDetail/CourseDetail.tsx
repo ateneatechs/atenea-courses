@@ -9,6 +9,8 @@ import YouTubePlayer from './YouTubePlayer';
 import { formatARS } from '../../utils/currency';
 import './CourseDetail.css';
 
+const EMPTY_LESSONS: Lesson[] = [];
+
 const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
@@ -22,7 +24,7 @@ const CourseDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Must be before any early returns — Rules of Hooks
-  const { completedIds, progressMap, saveProgress, markComplete, toggleComplete } = useLessonProgress(course?.lessons || []);
+  const { completedIds, progressMap, saveProgress, markComplete, toggleComplete } = useLessonProgress(course?.lessons || EMPTY_LESSONS);
 
   // The course payload never includes video_url (it would leak every lesson's
   // YouTube ID at once). Fetch it for just the active lesson, gated per-request.

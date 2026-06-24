@@ -57,22 +57,13 @@
   border: none;
   display: block;
 }
-/* Blocks the title link YouTube shows at the top of the player */
-.yt-overlay-title {
+/* Sits over the (controls-less) iframe so taps/clicks toggle play/pause
+   instead of reaching YouTube's own UI */
+.yt-click-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 44px;
-  z-index: 2;
-  cursor: default;
-}
-/* Blocks the YouTube logo in the bottom-right of the control bar */
-.yt-overlay-logo {
-  position: absolute;
-  bottom: 0; right: 0;
-  width: 90px;
-  height: 48px;
-  z-index: 2;
-  cursor: default;
+  inset: 0;
+  z-index: 1;
+  cursor: pointer;
 }
 
 /* Lock overlay (no access) */
@@ -111,6 +102,7 @@
 
 .video-controls {
   position: absolute; bottom: 0; left: 0; right: 0;
+  z-index: 2;
   padding: 24px;
   background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
   opacity: 0;
@@ -124,11 +116,11 @@
   border-radius: var(--radius-full);
   margin-bottom: 16px;
   overflow: hidden;
+  cursor: pointer;
 }
 .video-progress-fill {
   height: 100%;
   background: var(--color-primary-container);
-  width: 33%;
 }
 
 .video-controls-row {
