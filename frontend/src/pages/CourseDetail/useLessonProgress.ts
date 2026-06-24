@@ -7,6 +7,7 @@ interface LessonProgressState {
   progressMap: Map<string, number>;
   saveProgress: (lessonId: string, seconds: number) => void;
   markComplete: (lessonId: string) => void;
+  toggleComplete: (lessonId: string) => void;
 }
 
 export function useLessonProgress(lessons: Lesson[]): LessonProgressState {
@@ -43,5 +44,18 @@ export function useLessonProgress(lessons: Lesson[]): LessonProgressState {
     setProgressMap(prev => new Map(prev).set(lessonId, 0));
   }, []);
 
-  return { completedIds, progressMap, saveProgress, markComplete };
+  const toggleComplete = useCallback((lessonId: string) => {
+    setCompletedIds(prev => {
+      const next = new Set(prev);
+      const willBeCompleted = !next.has(lessonId);
+      if (willBeCompleted) next.add(lessonId); else next.delete(lessonId);
+      api.put(`/courses/lessons/${lessonId}/progress`, {
+        completed: willBeCompleted,
+        progressSeconds: 0,
+      }).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  return { completedIds, progressMap, saveProgress, markComplete, toggleComplete };
 }

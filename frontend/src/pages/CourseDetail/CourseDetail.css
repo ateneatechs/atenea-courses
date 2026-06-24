@@ -149,6 +149,12 @@
 
 /* Lesson Header */
 .lesson-header { margin-bottom: 40px; }
+.lesson-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
 .lesson-title {
   font-family: var(--font-display);
   font-size: var(--text-headline-xl);
@@ -161,6 +167,27 @@
   color: var(--color-on-surface-variant);
   line-height: 1.6;
   max-width: 700px;
+}
+
+.lesson-complete-btn {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-outline-variant);
+  background: none;
+  color: var(--color-on-surface-variant);
+  font-size: var(--text-label-caps);
+  font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.lesson-complete-btn:hover { background: var(--color-surface-container); }
+.lesson-complete-btn.completed {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  color: var(--color-success);
 }
 
 /* Tabs */

@@ -89,13 +89,14 @@ const YouTubePlayer: React.FC<Props> = ({
   }
 
   return (
-    <div className="yt-embed-wrap">
+    <div className="yt-embed-wrap" onContextMenu={(e) => e.preventDefault()}>
       <YouTube
         videoId={videoId}
         className="yt-iframe"
         opts={{
           width: '100%',
           height: '100%',
+          host: 'https://www.youtube-nocookie.com',
           playerVars: {
             autoplay: 1,
             modestbranding: 1,

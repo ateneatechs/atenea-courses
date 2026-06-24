@@ -22,7 +22,28 @@ const CourseDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Must be before any early returns — Rules of Hooks
-  const { completedIds, progressMap, saveProgress, markComplete } = useLessonProgress(course?.lessons || []);
+  const { completedIds, progressMap, saveProgress, markComplete, toggleComplete } = useLessonProgress(course?.lessons || []);
+
+  // The course payload never includes video_url (it would leak every lesson's
+  // YouTube ID at once). Fetch it for just the active lesson, gated per-request.
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [videoLoading, setVideoLoading] = useState(false);
+
+  useEffect(() => {
+    if (!course?.hasAccess || !activeLesson) {
+      setActiveVideoUrl(null);
+      setVideoLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setActiveVideoUrl(null);
+    setVideoLoading(true);
+    api.get<Lesson>(`/courses/lessons/${activeLesson.id}`)
+      .then(r => { if (!cancelled) setActiveVideoUrl(r.data.video_url || null); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setVideoLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeLesson?.id, course?.hasAccess]);
 
   useEffect(() => {
     if (!id) return;
@@ -79,11 +100,11 @@ const CourseDetail: React.FC = () => {
           </nav>
 
           {/* Video Player */}
-          <div className="video-player-wrap">
-            {hasAccess && activeLesson?.video_url ? (
+          <div className="video-player-wrap" onContextMenu={(e) => e.preventDefault()}>
+            {hasAccess && activeLesson && activeVideoUrl ? (
               <YouTubePlayer
                 key={activeLesson.id}
-                videoUrl={activeLesson.video_url}
+                videoUrl={activeVideoUrl}
                 thumbnailUrl={course.thumbnail_url}
                 title={activeLesson.title}
                 startSeconds={progressMap.get(activeLesson.id) ?? 0}
@@ -91,6 +112,12 @@ const CourseDetail: React.FC = () => {
                 onProgress={(secs) => saveProgress(activeLesson.id, secs)}
                 onComplete={() => markComplete(activeLesson.id)}
               />
+            ) : hasAccess && videoLoading ? (
+              <>
+                {course.thumbnail_url && (
+                  <img className="video-thumbnail" src={course.thumbnail_url} alt={course.title} style={{ opacity: 0.4 }} />
+                )}
+              </>
             ) : hasAccess ? (
               <>
                 {course.thumbnail_url && (
@@ -116,7 +143,23 @@ const CourseDetail: React.FC = () => {
 
           {/* Lesson Header */}
           <div className="lesson-header">
-            <h1 className="lesson-title">{activeLesson?.title || course.title}</h1>
+            <div className="lesson-header-top">
+              <h1 className="lesson-title">{activeLesson?.title || course.title}</h1>
+              {hasAccess && activeLesson && (
+                <button
+                  className={`lesson-complete-btn${completedIds.has(activeLesson.id) ? ' completed' : ''}`}
+                  onClick={() => toggleComplete(activeLesson.id)}
+                >
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: 18, fontVariationSettings: completedIds.has(activeLesson.id) ? "'FILL' 1" : "'FILL' 0" }}
+                  >
+                    check_circle
+                  </span>
+                  {completedIds.has(activeLesson.id) ? 'Completada' : 'Marcar como completada'}
+                </button>
+              )}
+            </div>
             <p className="lesson-subtitle">
               {activeLesson?.description || course.description}
             </p>

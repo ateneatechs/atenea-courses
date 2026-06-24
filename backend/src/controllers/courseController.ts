@@ -115,7 +115,10 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
       const { lp_completed, lp_seconds, ...lessonFields } = l;
       return {
         ...lessonFields,
-        video_url: hasAccess ? l.video_url : null,
+        // video_url is intentionally omitted here — it leaks every lesson's
+        // YouTube ID in one response. Fetch it per-lesson via GET /lessons/:id
+        // (getLessonById), which gates access per request.
+        video_url: null,
         progress: sameTenantUser
           ? { completed: lp_completed ?? false, progress_seconds: lp_seconds ?? 0 }
           : null,
