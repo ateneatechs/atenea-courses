@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInstagram, faYoutube } from '@fortawesome/free-brands-svg-icons';
 import './Footer.css';
 
 const Footer: React.FC = () => (
@@ -16,10 +18,10 @@ const Footer: React.FC = () => (
               <span className="material-symbols-outlined">public</span>
             </button>
             <button className="footer-social-btn" title="Instagram">
-              <span className="material-symbols-outlined">photo_camera</span>
+              <FontAwesomeIcon icon={faInstagram} />
             </button>
             <button className="footer-social-btn" title="YouTube">
-              <span className="material-symbols-outlined">movie</span>
+              <FontAwesomeIcon icon={faYoutube} />
             </button>
           </div>
         </div>
