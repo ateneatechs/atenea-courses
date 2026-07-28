@@ -69,7 +69,7 @@ const PaymentResult: React.FC = () => {
       <h1 className="payment-result-title">{copy.title}</h1>
       <p className="payment-result-text">{copy.text}</p>
       <div className="payment-result-btns">
-        <button className="btn-primary" onClick={() => navigate('/explorer')}>Ir a mis cursos</button>
+        <button className="btn-primary" onClick={() => navigate('/mis-cursos')}>Ir a mis cursos</button>
         <button className="btn-outline" onClick={() => navigate('/')}>Volver al inicio</button>
       </div>
     </div>
