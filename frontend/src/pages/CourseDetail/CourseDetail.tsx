@@ -79,6 +79,10 @@ const CourseDetail: React.FC = () => {
 
   const hasAccess = course.hasAccess;
   const lessons = course.lessons || [];
+  const currentLessonIndex = activeLesson ? lessons.findIndex(l => l.id === activeLesson.id) : -1;
+  const nextLessonIndex = currentLessonIndex !== -1 && currentLessonIndex < lessons.length - 1
+    ? currentLessonIndex + 1
+    : -1;
 
   const sections = lessons.reduce<Record<number, { title: string; lessons: Lesson[] }>>((acc, l) => {
     if (!acc[l.section_number]) acc[l.section_number] = { title: l.section_title, lessons: [] };
@@ -400,7 +404,13 @@ const CourseDetail: React.FC = () => {
             </div>
           ))}
 
-          <button className="sidebar-next-btn">Siguiente lección</button>
+          <button
+            className="sidebar-next-btn"
+            disabled={!hasAccess || nextLessonIndex === -1}
+            onClick={() => { if (nextLessonIndex !== -1) setActiveLesson(lessons[nextLessonIndex]); }}
+          >
+            Siguiente lección
+          </button>
         </aside>
       </div>
     </div>
