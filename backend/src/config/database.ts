@@ -5,7 +5,9 @@ dotenv.config();
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Opt-in via DATABASE_SSL (not NODE_ENV) — the bundled docker-compose Postgres
+  // has no TLS listener, only managed/external DBs (RDS, etc.) need this.
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
