@@ -67,10 +67,12 @@ Verificar que esté arriba:
 
 ```bash
 docker compose -f docker-compose.prod.yml ps
-curl http://localhost/api/health     # → {"status":"OK",...}
+curl http://127.0.0.1:8090/api/health     # → {"status":"OK",...}
 ```
 
-Entrar desde el navegador: `http://TU_IP` o `http://tudominio.com`.
+> Nota: en un VPS compartido con otros sitios, el nginx del proyecto **no** escucha en el 80/443
+> del host — sólo en `127.0.0.1:8090` (ver sección 4). Hasta configurar el vhost del nginx nativo,
+> la app no es accesible por `http://TU_IP` directamente, sólo con el `curl` de arriba.
 
 **Credenciales por defecto** (cambiarlas después):
 
@@ -81,36 +83,49 @@ Entrar desde el navegador: `http://TU_IP` o `http://tudominio.com`.
 
 ---
 
-## 4. Activar HTTPS (necesario para cobrar con Mercado Pago)
+## 4. Exponer el dominio y activar HTTPS (VPS compartido)
 
-Mercado Pago **exige HTTPS** en producción. Pasos:
+Si el VPS ya aloja otros sitios, el puerto 80/443 pertenece al **nginx nativo del host**
+(no al `docker-compose.prod.yml` de este proyecto, que sólo escucha en `127.0.0.1:8090`).
+El patrón es: un vhost nuevo en el nginx del host que hace `proxy_pass` a `127.0.0.1:8090`,
+igual que los demás sitios del servidor.
 
-```bash
-# Instalar certbot en el host
-sudo apt install -y certbot
+Crear `/etc/nginx/sites-available/tudominio.com`:
 
-# Generar el certificado (con el stack ya corriendo en el puerto 80)
-sudo certbot certonly --webroot -w /var/www/certbot -d tudominio.com
+```nginx
+server {
+    server_name tudominio.com www.tudominio.com;
+
+    client_max_body_size 2048M;
+
+    location / {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    listen 80;
+}
 ```
 
-> Si `--webroot` falla, parar Nginx (`docker compose -f docker-compose.prod.yml stop nginx`)
-> y usar `sudo certbot certonly --standalone -d tudominio.com`.
-
-Luego editar `nginx/nginx.prod.conf`:
-1. En el server `:80`, reemplazar todo lo que está debajo del comentario por `return 301 https://$host$request_uri;` (dejando el bloque `/.well-known/`).
-2. Descomentar el bloque `server { listen 443 ssl; ... }` y reemplazar `YOUR_DOMAIN.com` por tu dominio.
-
-Reiniciar Nginx:
-
 ```bash
-docker compose -f docker-compose.prod.yml restart nginx
+ln -s /etc/nginx/sites-available/tudominio.com /etc/nginx/sites-enabled/tudominio.com
+nginx -t && systemctl reload nginx
 ```
 
-Renovación automática del certificado (cron):
+Mercado Pago **exige HTTPS** en producción. Con el vhost ya activo en el 80 y el DNS apuntando
+al VPS, generar el certificado con el plugin de nginx (agrega el bloque `443 ssl` y el redirect
+301 automáticamente):
 
 ```bash
-echo "0 3 * * * certbot renew --quiet && docker compose -f /root/atenea-courses/docker-compose.prod.yml restart nginx" | sudo crontab -
+certbot --nginx -d tudominio.com -d www.tudominio.com
 ```
+
+La renovación automática ya la gestiona el timer/cron de certbot que se instaló con el paquete
+(no hace falta un cron aparte, a diferencia de un stack Docker-only).
 
 ---
 
