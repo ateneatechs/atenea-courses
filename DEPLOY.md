@@ -60,7 +60,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 Esto:
 1. Crea la base PostgreSQL y aplica el esquema + migraciones en orden.
-2. Crea el tenant **Naza Barber** y los datos de ejemplo (servicio `seed`, corre una sola vez).
+2. Crea el tenant **Naza Barber** y las cuentas admin/user/superadmin (servicio `seed`).
 3. Compila y sirve el frontend y el backend detrás de Nginx en el puerto 80.
 
 Verificar que esté arriba:
@@ -166,5 +166,7 @@ docker exec atenea-db pg_dump -U atenea atenea_courses > backup_$(date +%F).sql
 
 - Los archivos subidos (logos) y la base de datos viven en volúmenes de Docker, así que
   **sobreviven** a `up -d --build`. Para borrar todo desde cero: `docker compose -f docker-compose.prod.yml down -v`.
-- El servicio `seed` sólo crea datos si no existen (usa `ON CONFLICT DO NOTHING`), no pisa nada.
+- El servicio `seed` sólo crea las cuentas admin/user/superadmin si no existen (usa
+  `ON CONFLICT DO NOTHING`), no pisa nada. No carga cursos de ejemplo — se agregan
+  desde el admin.
 - Para cambiar el nombre/colores/logo de la academia: admin → **Personalización**.
