@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { Course, Lesson, CourseTab } from '../../types';
+import { Course, Lesson } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTenant } from '../../contexts/TenantContext';
+import { useAuthModal } from '../../contexts/AuthModalContext';
 import { useLessonProgress } from './useLessonProgress';
 import YouTubePlayer from './YouTubePlayer';
 import { formatARS } from '../../utils/currency';
@@ -14,14 +15,14 @@ const EMPTY_LESSONS: Lesson[] = [];
 
 const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { paymentsEnabled } = useTenant();
+  const { openLogin } = useAuthModal();
   const navigate = useNavigate();
   const [buying, setBuying] = useState(false);
 
   const [course, setCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const [activeTab, setActiveTab] = useState<CourseTab>('overview');
   const [loading, setLoading] = useState(true);
   const [downloadingCert, setDownloadingCert] = useState(false);
 
@@ -79,6 +80,9 @@ const CourseDetail: React.FC = () => {
 
   const hasAccess = course.hasAccess;
   const lessons = course.lessons || [];
+  // A non-membership course with no price is a misconfigured admin entry —
+  // there is no free-checkout path, so don't dangle a purchase/membership CTA.
+  const priceMisconfigured = !course.is_membership_exclusive && !course.price;
   const currentLessonIndex = activeLesson ? lessons.findIndex(l => l.id === activeLesson.id) : -1;
   const nextLessonIndex = currentLessonIndex !== -1 && currentLessonIndex < lessons.length - 1
     ? currentLessonIndex + 1
@@ -193,12 +197,16 @@ const CourseDetail: React.FC = () => {
               <p className="access-gate-text">
                 {course.is_membership_exclusive
                   ? 'Este curso está incluido en la membresía. Suscríbete para obtener acceso ilimitado.'
-                  : `Compra este curso por ${formatARS(course.price!)} o suscríbete para acceder a todos los cursos.`}
+                  : priceMisconfigured
+                    ? 'Este curso todavía no tiene un precio configurado. Volvé más tarde.'
+                    : `Compra este curso por ${formatARS(course.price!)} o suscríbete para acceder a todos los cursos.`}
               </p>
               <div className="access-gate-btns">
-                <button className="btn-primary" onClick={() => navigate('/membership')}>
-                  {course.is_membership_exclusive ? 'Suscribirse ahora' : 'Obtener Membresía'}
-                </button>
+                {!priceMisconfigured && (
+                  <button className="btn-primary" onClick={() => navigate('/membership')}>
+                    {course.is_membership_exclusive ? 'Suscribirse ahora' : 'Obtener Membresía'}
+                  </button>
+                )}
                 {!course.is_membership_exclusive && course.price && isAuthenticated && (
                   <button className="btn-outline" disabled={buying} onClick={async () => {
                     if (!paymentsEnabled) {
@@ -218,7 +226,7 @@ const CourseDetail: React.FC = () => {
                   </button>
                 )}
                 {!isAuthenticated && (
-                  <button className="btn-outline" onClick={() => navigate('/')}>
+                  <button className="btn-outline" onClick={openLogin}>
                     Iniciar sesión
                   </button>
                 )}
@@ -226,21 +234,8 @@ const CourseDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Tabs */}
-          <div className="course-tabs">
-            {(['overview', 'resources', 'discussion'] as CourseTab[]).map(tab => (
-              <button
-                key={tab}
-                className={`course-tab ${activeTab === tab ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {{ overview: 'Descripción', resources: 'Recursos', discussion: 'Discusión' }[tab]}
-              </button>
-            ))}
-          </div>
-
-          {/* Overview Tab */}
-          <div className={`tab-content ${activeTab === 'overview' ? 'active' : ''}`}>
+          {/* Overview */}
+          <div className="tab-content active">
             <div className="tab-overview-grid">
               <div>
                 <h3 className="objectives-title">Objetivos de aprendizaje</h3>
@@ -266,66 +261,8 @@ const CourseDetail: React.FC = () => {
                 <p className="educator-bio">
                   Barbero premiado con más de 10 años de experiencia en competencias internacionales, especializado en técnica de precisión y formación profesional.
                 </p>
-                <button className="educator-link">Ver perfil</button>
               </div>
             </div>
-          </div>
-
-          {/* Resources Tab */}
-          <div className={`tab-content ${activeTab === 'resources' ? 'active' : ''}`}>
-            <div className="resources-list">
-              {[
-                { icon: 'picture_as_pdf', name: 'Diagrama técnico', meta: 'PDF • 4.2 MB' },
-                { icon: 'inventory', name: 'Lista de herramientas recomendadas', meta: 'PDF • 1.1 MB' },
-              ].map(r => (
-                <div key={r.name} className="resource-item glass-card">
-                  <div className="resource-item-left">
-                    <span className="resource-icon">
-                      <span className="material-symbols-outlined">{r.icon}</span>
-                    </span>
-                    <div>
-                      <p className="resource-name">{r.name}</p>
-                      <p className="resource-meta">{r.meta}</p>
-                    </div>
-                  </div>
-                  <span className="material-symbols-outlined resource-download">download</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Discussion Tab */}
-          <div className={`tab-content ${activeTab === 'discussion' ? 'active' : ''}`}>
-            {isAuthenticated ? (
-              <div style={{ display: 'flex', gap: 16 }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 'var(--radius-full)',
-                  background: 'color-mix(in srgb, var(--color-primary-fixed) 30%, transparent)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 700, color: 'var(--color-primary)', flexShrink: 0
-                }}>
-                  {user?.name?.charAt(0).toUpperCase()}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <textarea
-                    style={{
-                      width: '100%', background: 'var(--color-surface-container-low)',
-                      border: 'none', borderBottom: '1px solid var(--color-outline-variant)',
-                      color: 'var(--color-on-surface)', padding: '8px 0', fontSize: 14, outline: 'none',
-                      resize: 'vertical', minHeight: 80,
-                    }}
-                    placeholder="Únete a la discusión..."
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                    <button className="btn-primary" style={{ padding: '8px 24px', fontSize: 11 }}>Publicar</button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p style={{ color: 'var(--color-on-surface-variant)', fontStyle: 'italic' }}>
-                Inicia sesión para unirte a la discusión.
-              </p>
-            )}
           </div>
         </section>
 

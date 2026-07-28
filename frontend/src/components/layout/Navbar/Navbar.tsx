@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useTenant } from '../../../contexts/TenantContext';
+import { useAuthModal } from '../../../contexts/AuthModalContext';
 import LoginModal from '../../auth/LoginModal/LoginModal';
 import RegisterModal from '../../auth/RegisterModal/RegisterModal';
 import './Navbar.css';
@@ -12,10 +13,9 @@ const Navbar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { tenantName, logoUrl, membershipEnabled } = useTenant();
   const navigate = useNavigate();
+  const { showLogin, showRegister, openLogin, openRegister, closeModals, switchToRegister, switchToLogin } = useAuthModal();
 
   const [scrolled, setScrolled] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -123,12 +123,12 @@ const Navbar: React.FC = () => {
             </div>
           ) : (
             <>
-              <button className="navbar-signin-btn" onClick={() => setShowLogin(true)}>
+              <button className="navbar-signin-btn" onClick={openLogin}>
                 Iniciar sesión
               </button>
               <button
                 className="navbar-icon-btn"
-                onClick={() => setShowRegister(true)}
+                onClick={openRegister}
                 title="Crear cuenta"
               >
                 <span className="material-symbols-outlined">account_circle</span>
@@ -139,16 +139,10 @@ const Navbar: React.FC = () => {
       </nav>
 
       {showLogin && (
-        <LoginModal
-          onClose={() => setShowLogin(false)}
-          onSwitchToRegister={() => { setShowLogin(false); setShowRegister(true); }}
-        />
+        <LoginModal onClose={closeModals} onSwitchToRegister={switchToRegister} />
       )}
       {showRegister && (
-        <RegisterModal
-          onClose={() => setShowRegister(false)}
-          onSwitchToLogin={() => { setShowRegister(false); setShowLogin(true); }}
-        />
+        <RegisterModal onClose={closeModals} onSwitchToLogin={switchToLogin} />
       )}
     </>
   );

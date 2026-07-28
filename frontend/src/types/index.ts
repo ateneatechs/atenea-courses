@@ -84,4 +84,3 @@ export interface AuthResponse {
 
 export type SortOption = 'newest' | 'popular' | 'price-desc';
 export type AdminTab = 'overview' | 'courses' | 'users' | 'branding' | 'membership' | 'payments';
-export type CourseTab = 'overview' | 'resources' | 'discussion';

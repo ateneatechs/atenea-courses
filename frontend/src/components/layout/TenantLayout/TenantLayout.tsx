@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { TenantProvider, useTenant } from '../../../contexts/TenantContext';
+import { AuthModalProvider } from '../../../contexts/AuthModalContext';
 import { getTenantSlug } from '../../../utils/tenant';
 import Navbar from '../Navbar/Navbar';
 import Footer from '../Footer/Footer';
@@ -19,11 +20,13 @@ const TenantLayout: React.FC = () => {
   return (
     <TenantProvider tenantSlug={tenantSlug}>
       <TenantGuard>
-        <div className="app">
-          <Navbar />
-          <Outlet />
-          <Footer />
-        </div>
+        <AuthModalProvider>
+          <div className="app">
+            <Navbar />
+            <Outlet />
+            <Footer />
+          </div>
+        </AuthModalProvider>
       </TenantGuard>
     </TenantProvider>
   );

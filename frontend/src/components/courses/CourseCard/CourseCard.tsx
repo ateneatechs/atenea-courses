@@ -17,7 +17,7 @@ const CourseCard: React.FC<Props> = ({ course }) => {
     ? 'Incluido'
     : course.price
       ? formatARS(course.price)
-      : 'Gratis';
+      : 'Precio a confirmar';
 
   return (
     <div className="course-card" onClick={() => navigate(`/courses/${course.id}`)}>

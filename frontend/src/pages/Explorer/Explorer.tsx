@@ -123,10 +123,9 @@ const Explorer: React.FC = () => {
         </div>
       )}
 
-      {/* Load More */}
+      {/* Results count */}
       {!fading && courses.length > 0 && (
         <div className="load-more-wrap">
-          <button className="load-more-btn">Cargar más cursos</button>
           <p className="load-more-count">Mostrando {courses.length} masterclasses</p>
         </div>
       )}
