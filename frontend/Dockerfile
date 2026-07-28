@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm ci && chmod +x node_modules/.bin/*
 COPY . .
 # Bake the fixed tenant slug into the build for single-client / dedicated-domain deploys.
 ARG VITE_DEFAULT_TENANT=naza-barber

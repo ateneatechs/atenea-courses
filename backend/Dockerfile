@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm ci && chmod +x node_modules/.bin/*
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
