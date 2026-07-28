@@ -10,6 +10,9 @@ import CourseDetail from './pages/CourseDetail/CourseDetail';
 import Membership from './pages/Membership/Membership';
 import MyCourses from './pages/MyCourses/MyCourses';
 import PaymentResult from './pages/PaymentResult/PaymentResult';
+import PrivacyPolicy from './pages/Legal/PrivacyPolicy';
+import TermsOfService from './pages/Legal/TermsOfService';
+import Support from './pages/Legal/Support';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import Landing from './pages/Landing/Landing';
 import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
@@ -50,6 +53,9 @@ const App: React.FC = () => (
             <Route path="membership" element={<Membership />} />
             <Route path="mis-cursos" element={<MyCourses />} />
             <Route path="payment/result" element={<PaymentResult />} />
+            <Route path="privacidad" element={<PrivacyPolicy />} />
+            <Route path="terminos" element={<TermsOfService />} />
+            <Route path="soporte" element={<Support />} />
             <Route
               path="admin/*"
               element={<AdminRoute><AdminDashboard /></AdminRoute>}

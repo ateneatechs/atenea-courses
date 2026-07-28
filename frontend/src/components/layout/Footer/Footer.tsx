@@ -30,20 +30,16 @@ const Footer: React.FC = () => (
           <div className="footer-col">
             <span className="footer-col-title">Explorar</span>
             <Link to="/explorer">Cursos</Link>
-            <Link to="/explorer">Instructores</Link>
-            <Link to="#">Tarjetas de regalo</Link>
           </div>
           <div className="footer-col">
             <span className="footer-col-title">Academia</span>
             <Link to="#">Sobre nosotros</Link>
-            <Link to="#">Trabaja con nosotros</Link>
-            <Link to="#">Prensa</Link>
           </div>
           <div className="footer-col">
             <span className="footer-col-title">Soporte</span>
-            <Link to="#">Política de privacidad</Link>
-            <Link to="#">Términos de servicio</Link>
-            <Link to="#">Contactar soporte</Link>
+            <Link to="/privacidad">Política de privacidad</Link>
+            <Link to="/terminos">Términos de servicio</Link>
+            <Link to="/soporte">Contactar soporte</Link>
           </div>
         </div>
       </div>
