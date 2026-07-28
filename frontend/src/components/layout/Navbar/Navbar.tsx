@@ -13,7 +13,7 @@ const Navbar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { tenantName, logoUrl, membershipEnabled } = useTenant();
   const navigate = useNavigate();
-  const { showLogin, showRegister, openLogin, openRegister, closeModals, switchToRegister, switchToLogin } = useAuthModal();
+  const { showLogin, showRegister, openLogin, closeModals, switchToRegister, switchToLogin } = useAuthModal();
 
   const [scrolled, setScrolled] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -134,19 +134,9 @@ const Navbar: React.FC = () => {
               )}
             </div>
           ) : (
-            <>
-              <button className="navbar-signin-btn" onClick={openLogin} title="Iniciar sesión">
-                <span className="material-symbols-outlined navbar-signin-icon">login</span>
-                <span className="navbar-signin-label">Iniciar sesión</span>
-              </button>
-              <button
-                className="navbar-icon-btn"
-                onClick={openRegister}
-                title="Crear cuenta"
-              >
-                <span className="material-symbols-outlined">account_circle</span>
-              </button>
-            </>
+            <button className="navbar-signin-btn" onClick={openLogin}>
+              Iniciar sesión
+            </button>
           )}
         </div>
       </nav>

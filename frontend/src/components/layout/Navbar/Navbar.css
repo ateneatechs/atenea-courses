@@ -53,15 +53,6 @@
 
 .navbar-right { display: flex; align-items: center; gap: 20px; }
 
-.navbar-icon-btn {
-  background: none; border: none; cursor: pointer;
-  color: var(--color-on-surface-variant);
-  transition: color var(--transition-fast);
-  display: flex; align-items: center;
-  padding: 4px; border-radius: var(--radius-full);
-}
-.navbar-icon-btn:hover { color: var(--color-primary); }
-
 .navbar-signin-btn {
   font-size: var(--text-label-caps);
   font-weight: 600;
@@ -73,7 +64,6 @@
   white-space: nowrap;
 }
 .navbar-signin-btn:hover { color: var(--color-primary); }
-.navbar-signin-icon { display: none; }
 
 .theme-toggle {
   background: none; border: none; cursor: pointer;
@@ -191,12 +181,6 @@
   .navbar-left { gap: 12px; }
   .navbar-hamburger { display: flex; }
   .navbar-right { gap: 12px; }
-  .navbar-signin-label { display: none; }
-  .navbar-signin-icon {
-    display: flex;
-    padding: 4px;
-    border-radius: var(--radius-full);
-  }
 
   .mobile-menu {
     display: flex;
