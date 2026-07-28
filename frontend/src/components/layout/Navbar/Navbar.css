@@ -73,6 +73,7 @@
   white-space: nowrap;
 }
 .navbar-signin-btn:hover { color: var(--color-primary); }
+.navbar-signin-icon { display: none; }
 
 .theme-toggle {
   background: none; border: none; cursor: pointer;
@@ -172,8 +173,62 @@
   object-fit: contain;
 }
 
+.navbar-hamburger {
+  display: none;
+  background: none; border: none; cursor: pointer;
+  color: var(--color-on-surface);
+  align-items: center; justify-content: center;
+  padding: 4px;
+}
+
+.mobile-menu {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .navbar { padding: 0 var(--spacing-margin-mobile); }
   .navbar-links { display: none; }
-  .navbar-left { gap: 16px; }
+  .navbar-left { gap: 12px; }
+  .navbar-hamburger { display: flex; }
+  .navbar-right { gap: 12px; }
+  .navbar-signin-label { display: none; }
+  .navbar-signin-icon {
+    display: flex;
+    padding: 4px;
+    border-radius: var(--radius-full);
+  }
+
+  .mobile-menu {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0; right: 0;
+    z-index: 99;
+    padding: 8px var(--spacing-margin-mobile) 20px;
+    background: var(--nav-bg);
+    backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+    border-bottom: 1px solid color-mix(in srgb, var(--color-outline) 15%, transparent);
+    box-shadow: var(--shadow-md);
+    animation: fadeInDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .mobile-menu a,
+  .mobile-menu-link {
+    padding: 14px 4px;
+    font-size: var(--text-body-md);
+    font-weight: 500;
+    color: var(--color-on-surface-variant);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-outline) 10%, transparent);
+    background: none; border: none;
+    text-align: left; cursor: pointer;
+  }
+  .mobile-menu a:last-child, .mobile-menu-link:last-child { border-bottom: none; }
+  .mobile-menu a.active { color: var(--color-primary); font-weight: 700; }
+  .mobile-menu-link.danger { color: var(--color-error); }
+  .mobile-menu-divider {
+    height: 1px;
+    background: var(--color-outline-variant);
+    margin: 8px 0;
+  }
 }

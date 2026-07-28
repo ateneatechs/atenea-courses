@@ -17,6 +17,7 @@ const Navbar: React.FC = () => {
 
   const [scrolled, setScrolled] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,8 +39,11 @@ const Navbar: React.FC = () => {
   const handleLogout = () => {
     logout();
     setShowDropdown(false);
+    setShowMobileMenu(false);
     navigate('/');
   };
+
+  const closeMobileMenu = () => setShowMobileMenu(false);
 
   const initials = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -49,9 +53,17 @@ const Navbar: React.FC = () => {
     <>
       <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
         <div className="navbar-left">
+          <button
+            className="navbar-hamburger"
+            onClick={() => setShowMobileMenu(p => !p)}
+            aria-label={showMobileMenu ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={showMobileMenu}
+          >
+            <span className="material-symbols-outlined">{showMobileMenu ? 'close' : 'menu'}</span>
+          </button>
           {logoUrl
-            ? <NavLink to="/"><img src={logoUrl} alt={tenantName} className="navbar-logo-img" /></NavLink>
-            : <NavLink to="/" className="navbar-logo">{tenantName}</NavLink>
+            ? <NavLink to="/" onClick={closeMobileMenu}><img src={logoUrl} alt={tenantName} className="navbar-logo-img" /></NavLink>
+            : <NavLink to="/" className="navbar-logo" onClick={closeMobileMenu}>{tenantName}</NavLink>
           }
           <ul className="navbar-links">
             <li><NavLink to="/explorer" className={({ isActive }) => isActive ? 'active' : ''}>Explorar</NavLink></li>
@@ -123,8 +135,9 @@ const Navbar: React.FC = () => {
             </div>
           ) : (
             <>
-              <button className="navbar-signin-btn" onClick={openLogin}>
-                Iniciar sesión
+              <button className="navbar-signin-btn" onClick={openLogin} title="Iniciar sesión">
+                <span className="material-symbols-outlined navbar-signin-icon">login</span>
+                <span className="navbar-signin-label">Iniciar sesión</span>
               </button>
               <button
                 className="navbar-icon-btn"
@@ -137,6 +150,30 @@ const Navbar: React.FC = () => {
           )}
         </div>
       </nav>
+
+      {showMobileMenu && (
+        <div className="mobile-menu">
+          <NavLink to="/explorer" className={({ isActive }) => isActive ? 'active' : ''} onClick={closeMobileMenu}>
+            Explorar
+          </NavLink>
+          <NavLink to="/explorer?filter=masterclass" className={({ isActive }) => isActive ? 'active' : ''} onClick={closeMobileMenu}>
+            Masterclasses
+          </NavLink>
+          {membershipEnabled && (
+            <NavLink to="/membership" className={({ isActive }) => isActive ? 'active' : ''} onClick={closeMobileMenu}>
+              Membresía
+            </NavLink>
+          )}
+          {isAuthenticated && (
+            <>
+              <div className="mobile-menu-divider" />
+              <NavLink to="/mis-cursos" onClick={closeMobileMenu}>Mis Cursos</NavLink>
+              {isAdmin && <NavLink to="/admin" onClick={closeMobileMenu}>Panel de Admin</NavLink>}
+              <button className="mobile-menu-link danger" onClick={handleLogout}>Cerrar sesión</button>
+            </>
+          )}
+        </div>
+      )}
 
       {showLogin && (
         <LoginModal onClose={closeModals} onSwitchToRegister={switchToRegister} />
