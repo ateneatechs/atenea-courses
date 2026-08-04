@@ -284,7 +284,7 @@ export const updateUserRole = async (req: Request, res: Response): Promise<void>
       return;
     }
     const result = await query(
-      'UPDATE users SET role = $1 WHERE id = $2 AND tenant_id = $3 RETURNING id, email, name, role',
+      'UPDATE users SET role = $1, token_version = token_version + 1 WHERE id = $2 AND tenant_id = $3 RETURNING id, email, name, role',
       [role, id, req.tenantId!]
     );
     if (result.rows.length === 0) { res.status(404).json({ message: 'User not found' }); return; }

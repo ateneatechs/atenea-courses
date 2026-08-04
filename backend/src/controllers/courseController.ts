@@ -1,8 +1,17 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import path from 'path';
+import fs from 'fs';
 import { query } from '../config/database';
 import { renderCertificatePdf } from '../services/certificate';
+
+const MAX_LESSON_PROGRESS_SECONDS = 24 * 60 * 60; // sanity ceiling, not the real anti-fraud gate (see getCourseCertificate)
+const MIN_SECONDS_PER_LESSON = 60; // conservative floor used to detect implausibly fast course completion
+
+const VIDEO_EXT_TO_MIME: Record<string, string> = {
+  '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
+  '.mkv': 'video/x-matroska', '.avi': 'video/x-msvideo',
+};
 
 const checkAccess = async (
   userId: string,
@@ -215,6 +224,28 @@ export const getCourseCertificate = async (req: Request, res: Response): Promise
       return;
     }
 
+    // Anti-fraud: how long ago did this user actually gain access? If they "finished"
+    // more lessons than could plausibly be watched in that time, reject the certificate.
+    const accessResult = await query(
+      `SELECT
+         (SELECT MIN(created_at) FROM course_purchases WHERE user_id = $1 AND course_id = $2) AS purchased_at,
+         (SELECT MIN(starts_at) FROM subscriptions WHERE user_id = $1 AND tenant_id = $3) AS sub_starts_at`,
+      [userId, id, tenantId]
+    );
+    const { purchased_at, sub_starts_at } = accessResult.rows[0];
+    const accessGrantedAt = purchased_at || sub_starts_at;
+
+    if (accessGrantedAt) {
+      const elapsedSeconds = (Date.now() - new Date(accessGrantedAt).getTime()) / 1000;
+      const minimumPlausibleSeconds = total * MIN_SECONDS_PER_LESSON;
+      if (elapsedSeconds < minimumPlausibleSeconds) {
+        res.status(400).json({
+          message: 'No pudimos emitir el certificado: detectamos actividad inusual (el curso se completó en un tiempo demasiado corto). Si creés que es un error, contactá a soporte.',
+        });
+        return;
+      }
+    }
+
     const [userResult, tenantResult, logoResult] = await Promise.all([
       query('SELECT name FROM users WHERE id = $1', [userId]),
       query('SELECT name FROM tenants WHERE id = $1', [tenantId]),
@@ -332,6 +363,14 @@ export const updateLessonProgress = async (req: Request, res: Response): Promise
     const { completed, progressSeconds } = req.body;
     const userId = req.user!.userId;
 
+    if (progressSeconds !== undefined) {
+      const seconds = Number(progressSeconds);
+      if (!Number.isFinite(seconds) || seconds < 0 || seconds > MAX_LESSON_PROGRESS_SECONDS) {
+        res.status(400).json({ message: 'Progreso inválido.' });
+        return;
+      }
+    }
+
     // JOIN courses to enforce tenant isolation
     const lessonResult = await query(
       `SELECT l.course_id FROM lessons l
@@ -363,5 +402,85 @@ export const updateLessonProgress = async (req: Request, res: Response): Promise
   } catch (error) {
     console.error('UpdateProgress error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const streamLessonVideo = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+
+    // JOIN courses to enforce tenant isolation, same pattern as getLessonById
+    const lessonResult = await query(
+      `SELECT l.video_url, l.course_id FROM lessons l
+       JOIN courses c ON c.id = l.course_id
+       WHERE l.id = $1 AND c.tenant_id = $2`,
+      [id, req.tenantId!]
+    );
+    if (lessonResult.rows.length === 0) {
+      res.status(404).json({ message: 'Lesson not found' });
+      return;
+    }
+    const lesson = lessonResult.rows[0];
+
+    const hasAccess = await checkAccess(userId, lesson.course_id, req.tenantId!, req.user!.role);
+    if (!hasAccess) {
+      res.status(403).json({ message: 'Access denied. Subscribe or purchase this course.' });
+      return;
+    }
+
+    // Only self-hosted files live under /uploads/videos/ — YouTube-hosted lessons
+    // (the common case) don't go through this endpoint at all.
+    const videoUrl: string = lesson.video_url || '';
+    if (!videoUrl.startsWith('/uploads/videos/')) {
+      res.status(404).json({ message: 'Este video no está alojado en la plataforma.' });
+      return;
+    }
+
+    // path.basename strips any directory components — defense in depth even though
+    // video_url is server-generated (multer filenames), never taken from user input.
+    const filename = path.basename(videoUrl);
+    const filePath = path.join(process.cwd(), 'uploads', 'videos', filename);
+
+    fs.stat(filePath, (statErr, stat) => {
+      if (statErr || !stat.isFile()) {
+        res.status(404).json({ message: 'Archivo de video no encontrado.' });
+        return;
+      }
+
+      const contentType = VIDEO_EXT_TO_MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
+      const range = req.headers.range;
+
+      if (!range) {
+        res.writeHead(200, {
+          'Content-Length': stat.size,
+          'Content-Type': contentType,
+          'Accept-Ranges': 'bytes',
+        });
+        fs.createReadStream(filePath).pipe(res);
+        return;
+      }
+
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+      const start = match?.[1] ? parseInt(match[1], 10) : 0;
+      const end = match?.[2] ? parseInt(match[2], 10) : stat.size - 1;
+
+      if (!match || start > end || end >= stat.size) {
+        res.writeHead(416, { 'Content-Range': `bytes */${stat.size}` });
+        res.end();
+        return;
+      }
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': end - start + 1,
+        'Content-Type': contentType,
+      });
+      fs.createReadStream(filePath, { start, end }).pipe(res);
+    });
+  } catch (error) {
+    console.error('StreamLessonVideo error:', error);
+    res.status(500).json({ message: 'No se pudo reproducir el video.' });
   }
 };

@@ -7,6 +7,7 @@ import { useTenant } from '../../contexts/TenantContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
 import { useLessonProgress } from './useLessonProgress';
 import YouTubePlayer from './YouTubePlayer';
+import LocalVideoPlayer from './LocalVideoPlayer';
 import { formatARS } from '../../utils/currency';
 import { downloadCourseCertificate } from '../../utils/certificate';
 import './CourseDetail.css';
@@ -127,16 +128,29 @@ const CourseDetail: React.FC = () => {
           {/* Video Player */}
           <div className="video-player-wrap" onContextMenu={(e) => e.preventDefault()}>
             {hasAccess && activeLesson && activeVideoUrl ? (
-              <YouTubePlayer
-                key={activeLesson.id}
-                videoUrl={activeVideoUrl}
-                thumbnailUrl={course.thumbnail_url}
-                title={activeLesson.title}
-                startSeconds={progressMap.get(activeLesson.id) ?? 0}
-                lessonId={activeLesson.id}
-                onProgress={(secs) => saveProgress(activeLesson.id, secs)}
-                onComplete={() => markComplete(activeLesson.id)}
-              />
+              activeVideoUrl.startsWith('/uploads/videos/') ? (
+                <LocalVideoPlayer
+                  key={activeLesson.id}
+                  videoUrl={activeVideoUrl}
+                  thumbnailUrl={course.thumbnail_url}
+                  title={activeLesson.title}
+                  startSeconds={progressMap.get(activeLesson.id) ?? 0}
+                  lessonId={activeLesson.id}
+                  onProgress={(secs) => saveProgress(activeLesson.id, secs)}
+                  onComplete={() => markComplete(activeLesson.id)}
+                />
+              ) : (
+                <YouTubePlayer
+                  key={activeLesson.id}
+                  videoUrl={activeVideoUrl}
+                  thumbnailUrl={course.thumbnail_url}
+                  title={activeLesson.title}
+                  startSeconds={progressMap.get(activeLesson.id) ?? 0}
+                  lessonId={activeLesson.id}
+                  onProgress={(secs) => saveProgress(activeLesson.id, secs)}
+                  onComplete={() => markComplete(activeLesson.id)}
+                />
+              )
             ) : hasAccess && videoLoading ? (
               <>
                 {course.thumbnail_url && (

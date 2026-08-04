@@ -12,3 +12,5 @@ const make = (windowMs: number, max: number, message: string) =>
 export const authLimiter = make(10 * 60 * 1000, 10, 'Demasiados intentos de inicio de sesión. Intenta de nuevo en unos minutos.');
 export const registerLimiter = make(60 * 60 * 1000, 5, 'Demasiados intentos de registro. Intenta de nuevo más tarde.');
 export const webhookLimiter = make(60 * 1000, 30, 'Too many requests.');
+export const paymentsLimiter = make(15 * 60 * 1000, 30, 'Demasiadas solicitudes de pago. Intenta de nuevo en unos minutos.');
+export const adminLimiter = make(60 * 1000, 120, 'Demasiadas solicitudes. Intenta de nuevo en unos minutos.');

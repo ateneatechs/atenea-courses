@@ -63,6 +63,7 @@ services:
       - ./backend:/app
     environment:
       DATABASE_URL: postgres://atenea:${POSTGRES_PASSWORD}@postgres:5432/atenea_courses
+      NODE_ENV: production
     command: sh -c "npm ci && npx ts-node --transpile-only src/seed.ts"
     depends_on:
       postgres:

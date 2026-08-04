@@ -144,6 +144,25 @@ export const updatePaymentSettings = async (req: Request, res: Response): Promis
       return;
     }
 
+    // Activar MP sin un secreto de firma deja /api/payments/webhook aceptando
+    // notificaciones sin firmar de cualquiera que adivine el UUID del tenant.
+    if (enabled) {
+      const hasNewSecret = typeof webhook_secret === 'string' && webhook_secret.trim().length > 0;
+      if (!hasNewSecret) {
+        const existing = await query(
+          `SELECT value FROM site_settings WHERE tenant_id = $1 AND key = 'mp_webhook_secret'`,
+          [req.tenantId!]
+        );
+        const hasExistingSecret = !!(existing.rows[0]?.value && existing.rows[0].value.trim());
+        if (!hasExistingSecret) {
+          res.status(400).json({
+            message: 'Para activar Mercado Pago primero tenés que configurar el "Secreto de firma" del webhook (Mercado Pago → Tu negocio → Configuración → Webhooks).',
+          });
+          return;
+        }
+      }
+    }
+
     await query(
       `INSERT INTO site_settings (tenant_id, key, value) VALUES ($1, 'mp_enabled', $2)
        ON CONFLICT (tenant_id, key) DO UPDATE SET value = $2`,

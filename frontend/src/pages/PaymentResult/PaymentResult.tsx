@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import './PaymentResult.css';
 
-type Status = 'loading' | 'approved' | 'pending' | 'rejected' | 'unknown';
+type Status = 'loading' | 'approved' | 'pending' | 'rejected' | 'forbidden' | 'unknown';
 
 const COPY: Record<Exclude<Status, 'loading'>, { icon: string; title: string; text: string }> = {
   approved: {
@@ -21,6 +21,11 @@ const COPY: Record<Exclude<Status, 'loading'>, { icon: string; title: string; te
     icon: 'cancel',
     title: 'Pago rechazado',
     text: 'No pudimos procesar tu pago. Podés intentar nuevamente.',
+  },
+  forbidden: {
+    icon: 'block',
+    title: 'Este pago no es tuyo',
+    text: 'El identificador de pago no corresponde a tu cuenta. Si creés que es un error, contactá a soporte.',
   },
   unknown: {
     icon: 'help',
@@ -44,7 +49,9 @@ const PaymentResult: React.FC = () => {
         setStatus(data.status || 'unknown');
         if (data.status === 'approved') await refreshUser();
       })
-      .catch(() => setStatus('unknown'));
+      .catch((error) => {
+        setStatus(error?.response?.status === 403 ? 'forbidden' : 'unknown');
+      });
   }, [params, refreshUser]);
 
   if (status === 'loading') {

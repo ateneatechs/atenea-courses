@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import {
   getCourses, getCourseById, getCategories, getInstructors,
-  getLessonById, updateLessonProgress, getMyCourses, getCourseCertificate,
+  getLessonById, updateLessonProgress, getMyCourses, getCourseCertificate, streamLessonVideo,
 } from '../controllers/courseController';
-import { authenticate, optionalAuth, requireSameTenant } from '../middleware/auth';
+import { authenticate, authenticateStream, optionalAuth, requireSameTenant } from '../middleware/auth';
 import { resolveTenant } from '../middleware/tenant';
 
 const router = Router();
@@ -17,5 +17,6 @@ router.get('/:id/certificate', authenticate, requireSameTenant, getCourseCertifi
 router.get('/:id', optionalAuth, getCourseById);
 router.get('/lessons/:id', authenticate, requireSameTenant, getLessonById);
 router.put('/lessons/:id/progress', authenticate, requireSameTenant, updateLessonProgress);
+router.get('/lessons/:id/stream', authenticateStream, requireSameTenant, streamLessonVideo);
 
 export default router;

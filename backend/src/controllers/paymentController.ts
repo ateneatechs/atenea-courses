@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { query } from '../config/database';
+import { query, withTransaction } from '../config/database';
 import {
   getTenantAccessToken,
   createPreference,
@@ -170,109 +170,136 @@ export const createSubscriptionCheckout = async (req: Request, res: Response): P
 const processMpPayment = async (
   accessToken: string,
   mpPaymentId: string,
-  tenantId: string
-): Promise<'approved' | 'pending' | 'rejected'> => {
+  tenantId: string,
+  options?: { requestingUserId?: string }
+): Promise<'approved' | 'pending' | 'rejected' | 'forbidden'> => {
   const mp = await getPayment(accessToken, mpPaymentId);
   const paymentRowId = mp.external_reference;
   if (!paymentRowId) return 'rejected';
 
-  const rowResult = await query(
-    'SELECT * FROM payments WHERE id = $1 AND tenant_id = $2',
-    [paymentRowId, tenantId]
-  );
-  const row = rowResult.rows[0];
-  if (!row) return 'rejected';
+  type Outcome = 'approved' | 'pending' | 'rejected' | 'forbidden';
+  type NotifyBuyer = { email: string; name: string; tenantName: string; itemTitle: string; amount: number };
 
-  // Idempotent: already granted
-  if (row.status === 'approved') return 'approved';
-
-  if (mp.status !== 'approved') {
-    const newStatus = mp.status === 'rejected' || mp.status === 'cancelled' ? mp.status : 'pending';
-    await query('UPDATE payments SET status = $1, mp_payment_id = $2 WHERE id = $3',
-      [newStatus, String(mp.id), paymentRowId]);
-    return mp.status === 'rejected' ? 'rejected' : 'pending';
-  }
-
-  // Anti-tamper: amount paid must match what we recorded
-  if (mp.transaction_amount != null && Math.abs(Number(mp.transaction_amount) - Number(row.amount)) > 0.5) {
-    await query('UPDATE payments SET status = $1, mp_payment_id = $2 WHERE id = $3',
-      ['rejected', String(mp.id), paymentRowId]);
-    return 'rejected';
-  }
-
-  // Grant access
-  let itemTitle = row.type === 'subscription'
-    ? (row.plan === 'annual' ? 'Membresía Anual' : 'Membresía Mensual')
-    : '';
-
-  if (row.type === 'course') {
-    await query(
-      `INSERT INTO course_purchases (user_id, course_id, tenant_id, amount)
-       VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, course_id) DO NOTHING`,
-      [row.user_id, row.course_id, tenantId, row.amount]
+  const result = await withTransaction(async (client): Promise<{ outcome: Outcome; notifyBuyer: NotifyBuyer | null }> => {
+    // Locks this payment row for the duration of the transaction — if the MP webhook
+    // and the frontend's /verify call race on the same payment, the second one blocks
+    // here until the first commits, then hits the idempotent "already approved" branch.
+    const rowResult = await client.query(
+      'SELECT * FROM payments WHERE id = $1 AND tenant_id = $2 FOR UPDATE',
+      [paymentRowId, tenantId]
     );
-    const courseResult = await query('SELECT title FROM courses WHERE id = $1', [row.course_id]);
-    itemTitle = courseResult.rows[0]?.title || 'Curso';
-  } else if (row.type === 'subscription') {
-    await query(
-      `UPDATE subscriptions SET status = 'cancelled'
-       WHERE user_id = $1 AND tenant_id = $2 AND status = 'active'`,
-      [row.user_id, tenantId]
-    );
-    const startsAt = new Date();
-    const endsAt = new Date();
-    if (row.plan === 'annual') endsAt.setFullYear(endsAt.getFullYear() + 1);
-    else endsAt.setMonth(endsAt.getMonth() + 1);
-    await query(
-      `INSERT INTO subscriptions (user_id, tenant_id, plan, status, starts_at, ends_at)
-       VALUES ($1, $2, $3, 'active', $4, $5)`,
-      [row.user_id, tenantId, row.plan, startsAt, endsAt]
-    );
-  }
+    const row = rowResult.rows[0];
+    if (!row) return { outcome: 'rejected', notifyBuyer: null };
 
-  await query(
-    `UPDATE payments SET status = 'approved', mp_payment_id = $1, processed_at = NOW() WHERE id = $2`,
-    [String(mp.id), paymentRowId]
-  );
+    if (options?.requestingUserId && row.user_id !== options.requestingUserId) {
+      return { outcome: 'forbidden', notifyBuyer: null };
+    }
 
-  const [userResult, tenantResult] = await Promise.all([
-    query('SELECT email, name FROM users WHERE id = $1', [row.user_id]),
-    query('SELECT name FROM tenants WHERE id = $1', [tenantId]),
-  ]);
-  const buyer = userResult.rows[0];
-  if (buyer) {
-    void sendOrderConfirmationEmail({
-      to: buyer.email,
-      userName: buyer.name,
+    // Idempotent: already granted
+    if (row.status === 'approved') return { outcome: 'approved', notifyBuyer: null };
+
+    if (mp.status !== 'approved') {
+      const newStatus = mp.status === 'rejected' || mp.status === 'cancelled' ? mp.status : 'pending';
+      await client.query('UPDATE payments SET status = $1, mp_payment_id = $2 WHERE id = $3',
+        [newStatus, String(mp.id), paymentRowId]);
+      return { outcome: mp.status === 'rejected' ? 'rejected' : 'pending', notifyBuyer: null };
+    }
+
+    // Anti-tamper: amount paid must match what we recorded
+    if (mp.transaction_amount != null && Math.abs(Number(mp.transaction_amount) - Number(row.amount)) > 0.5) {
+      await client.query('UPDATE payments SET status = $1, mp_payment_id = $2 WHERE id = $3',
+        ['rejected', String(mp.id), paymentRowId]);
+      return { outcome: 'rejected', notifyBuyer: null };
+    }
+
+    // Grant access
+    let itemTitle = row.type === 'subscription'
+      ? (row.plan === 'annual' ? 'Membresía Anual' : 'Membresía Mensual')
+      : '';
+
+    if (row.type === 'course') {
+      await client.query(
+        `INSERT INTO course_purchases (user_id, course_id, tenant_id, amount)
+         VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, course_id) DO NOTHING`,
+        [row.user_id, row.course_id, tenantId, row.amount]
+      );
+      const courseResult = await client.query('SELECT title FROM courses WHERE id = $1', [row.course_id]);
+      itemTitle = courseResult.rows[0]?.title || 'Curso';
+    } else if (row.type === 'subscription') {
+      await client.query(
+        `UPDATE subscriptions SET status = 'cancelled'
+         WHERE user_id = $1 AND tenant_id = $2 AND status = 'active'`,
+        [row.user_id, tenantId]
+      );
+      const startsAt = new Date();
+      const endsAt = new Date();
+      if (row.plan === 'annual') endsAt.setFullYear(endsAt.getFullYear() + 1);
+      else endsAt.setMonth(endsAt.getMonth() + 1);
+      // ON CONFLICT targets unique_active_subscription: if a *different* concurrent
+      // payment for this user already inserted an active row first, this one no-ops
+      // instead of throwing — the invariant "at most one active subscription" wins,
+      // even though which payment "wins" the race is arbitrary. Both payments were
+      // still validated and marked approved either way.
+      await client.query(
+        `INSERT INTO subscriptions (user_id, tenant_id, plan, status, starts_at, ends_at)
+         VALUES ($1, $2, $3, 'active', $4, $5)
+         ON CONFLICT (user_id, tenant_id) WHERE status = 'active' DO NOTHING`,
+        [row.user_id, tenantId, row.plan, startsAt, endsAt]
+      );
+    }
+
+    await client.query(
+      `UPDATE payments SET status = 'approved', mp_payment_id = $1, processed_at = NOW() WHERE id = $2`,
+      [String(mp.id), paymentRowId]
+    );
+
+    const [userResult, tenantResult] = await Promise.all([
+      client.query('SELECT email, name FROM users WHERE id = $1', [row.user_id]),
+      client.query('SELECT name FROM tenants WHERE id = $1', [tenantId]),
+    ]);
+    const buyer = userResult.rows[0];
+    const notifyBuyer: NotifyBuyer | null = buyer ? {
+      email: buyer.email,
+      name: buyer.name,
       tenantName: tenantResult.rows[0]?.name || 'Atenea',
       itemTitle,
       amount: Number(row.amount),
+    } : null;
+
+    return { outcome: 'approved', notifyBuyer };
+  });
+
+  // Side effect only after a successful COMMIT.
+  if (result.outcome === 'approved' && result.notifyBuyer) {
+    void sendOrderConfirmationEmail({
+      to: result.notifyBuyer.email,
+      userName: result.notifyBuyer.name,
+      tenantName: result.notifyBuyer.tenantName,
+      itemTitle: result.notifyBuyer.itemTitle,
+      amount: result.notifyBuyer.amount,
       paymentId: String(mp.id),
       purchasedAt: new Date(),
     });
   }
 
-  return 'approved';
+  return result.outcome;
 };
 
 // ─────────────────────────────────────────────────────────────
 // Webhook (called by Mercado Pago servers — no auth, tenant via query)
 // ─────────────────────────────────────────────────────────────
 export const webhook = async (req: Request, res: Response): Promise<void> => {
-  // Always ack quickly so MP doesn't retry forever.
-  res.status(200).json({ received: true });
-
   try {
     const tenantId = (req.query.tenant as string) || '';
     const type = (req.query.type as string) || (req.body?.type as string) || (req.query.topic as string);
-    if (type && type !== 'payment') return;
+    if (type && type !== 'payment') { res.status(200).json({ received: true }); return; }
 
     const mpPaymentId =
       (req.query['data.id'] as string) ||
       (req.body?.data?.id as string) ||
       (req.query.id as string);
 
-    if (!tenantId || !mpPaymentId) return;
+    if (!tenantId || !mpPaymentId) { res.status(200).json({ received: true }); return; }
 
     // If the tenant configured a webhook secret (Mercado Pago dashboard → Webhooks →
     // "Firma secreta"), require a valid x-signature. Tenants without one configured
@@ -286,15 +313,19 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
         dataId: String(mpPaymentId),
         secret: webhookSecret,
       });
-      if (!valid) return;
+      if (!valid) { res.status(401).json({ received: false }); return; }
     }
 
     const token = await getTenantAccessToken(tenantId);
-    if (!token) return;
+    if (!token) { res.status(200).json({ received: true }); return; }
 
     await processMpPayment(token, String(mpPaymentId), tenantId);
+    res.status(200).json({ received: true });
   } catch (error) {
     console.error('MP webhook error:', error);
+    // Non-200 so Mercado Pago retries the notification instead of us silently
+    // swallowing a payment that was never actually processed on our side.
+    res.status(500).json({ received: false });
   }
 };
 
@@ -317,7 +348,13 @@ export const verifyPayment = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const status = await processMpPayment(token, String(mpPaymentId), tenantId);
+    const status = await processMpPayment(token, String(mpPaymentId), tenantId, {
+      requestingUserId: req.user!.userId,
+    });
+    if (status === 'forbidden') {
+      res.status(403).json({ status: 'forbidden', message: 'Este pago no pertenece a tu cuenta.' });
+      return;
+    }
     res.json({ status });
   } catch (error) {
     console.error('verifyPayment error:', error);

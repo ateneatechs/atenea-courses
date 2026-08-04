@@ -27,20 +27,33 @@ async function seed() {
       ON CONFLICT (email) DO NOTHING
     `, [adminHash, userHash, tenantId]);
 
-    // Super-admin (no tenant)
-    const superHash = await bcrypt.hash('SuperAdmin123!', 12);
-    await client.query(`
-      INSERT INTO users (email, password_hash, name, role, tenant_id)
-      VALUES ('superadmin@atenea.com', $1, 'Super Admin', 'super_admin', NULL)
-      ON CONFLICT (email) DO NOTHING
-    `, [superHash]);
+    // Super-admin (no tenant, controla TODOS los tenants) — nunca sembrarlo con una
+    // contraseña hardcodeada en el código fuente cuando es un despliegue de producción.
+    const isProduction = process.env.NODE_ENV === 'production';
+    const superadminPassword = process.env.SEED_SUPERADMIN_PASSWORD;
+
+    if (isProduction && !superadminPassword) {
+      console.log('');
+      console.log('Saltando creación de superadmin@atenea.com: NODE_ENV=production y no se');
+      console.log('definió SEED_SUPERADMIN_PASSWORD. Para crearla (una sola vez), corré:');
+      console.log('  SEED_SUPERADMIN_PASSWORD="<password-fuerte>" npx ts-node --transpile-only src/seed.ts');
+    } else {
+      const superHash = await bcrypt.hash(superadminPassword || 'SuperAdmin123!', 12);
+      await client.query(`
+        INSERT INTO users (email, password_hash, name, role, tenant_id)
+        VALUES ('superadmin@atenea.com', $1, 'Super Admin', 'super_admin', NULL)
+        ON CONFLICT (email) DO NOTHING
+      `, [superHash]);
+    }
 
     console.log('Database seeded successfully!');
     console.log('');
     console.log('Credenciales:');
     console.log('  Admin:      admin@atenea.com      / Admin123!');
     console.log('  User:       user@atenea.com       / User123!');
-    console.log('  SuperAdmin: superadmin@atenea.com / SuperAdmin123!');
+    if (!isProduction || superadminPassword) {
+      console.log(`  SuperAdmin: superadmin@atenea.com / ${superadminPassword || 'SuperAdmin123!'}`);
+    }
   } finally {
     client.release();
     await pool.end();

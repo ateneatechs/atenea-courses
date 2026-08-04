@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireAdmin, requireSameTenant } from '../middleware/auth';
+import { adminLimiter } from '../middleware/rateLimit';
 import { resolveTenant } from '../middleware/tenant';
 import { uploadImage, uploadVideo } from '../config/multer';
 import {
@@ -13,7 +14,7 @@ import {
 } from '../controllers/settingsController';
 
 const router = Router();
-router.use(resolveTenant, authenticate, requireAdmin, requireSameTenant);
+router.use(adminLimiter, resolveTenant, authenticate, requireAdmin, requireSameTenant);
 
 router.get('/stats', getStats);
 router.get('/courses', getAllCourses);

@@ -5,6 +5,8 @@ import { query } from '../config/database';
 import { JwtPayload } from '../types';
 import { JWT_SECRET } from '../config/jwt';
 
+interface PgUniqueViolation { code?: string; constraint?: string; }
+
 const signToken = (payload: JwtPayload) =>
   jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 
@@ -35,14 +37,19 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const passwordHash = await bcrypt.hash(password, 12);
     const result = await query(
-      'INSERT INTO users (email, password_hash, name, tenant_id) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, tenant_id',
+      'INSERT INTO users (email, password_hash, name, tenant_id) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, tenant_id, token_version',
       [email.toLowerCase(), passwordHash, name, req.tenantId]
     );
 
-    const user = result.rows[0];
-    const token = signToken({ userId: user.id, email: user.email, role: user.role, tenantId: user.tenant_id });
+    const { token_version, ...user } = result.rows[0];
+    const token = signToken({ userId: user.id, email: user.email, role: user.role, tenantId: user.tenant_id, tokenVersion: token_version });
     res.status(201).json({ token, user });
   } catch (error) {
+    const pgError = error as PgUniqueViolation;
+    if (pgError.code === '23505' && pgError.constraint === 'unique_tenant_email') {
+      res.status(400).json({ message: 'El email ya está registrado en esta academia.' });
+      return;
+    }
     console.error('Register error:', error);
     res.status(500).json({ message: 'Server error' });
   }
@@ -60,12 +67,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     if (req.tenantId) {
       // Tenant-scoped login; super_admin can log in from any tenant URL
       result = await query(
-        "SELECT id, email, name, role, tenant_id, password_hash FROM users WHERE email = $1 AND (tenant_id = $2 OR (role = 'super_admin' AND tenant_id IS NULL))",
+        "SELECT id, email, name, role, tenant_id, password_hash, token_version FROM users WHERE email = $1 AND (tenant_id = $2 OR (role = 'super_admin' AND tenant_id IS NULL))",
         [email.toLowerCase(), req.tenantId]
       );
     } else {
       result = await query(
-        "SELECT id, email, name, role, tenant_id, password_hash FROM users WHERE email = $1 AND role = 'super_admin' AND tenant_id IS NULL",
+        "SELECT id, email, name, role, tenant_id, password_hash, token_version FROM users WHERE email = $1 AND role = 'super_admin' AND tenant_id IS NULL",
         [email.toLowerCase()]
       );
     }
@@ -82,10 +89,20 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = signToken({ userId: user.id, email: user.email, role: user.role, tenantId: user.tenant_id });
+    const token = signToken({ userId: user.id, email: user.email, role: user.role, tenantId: user.tenant_id, tokenVersion: user.token_version });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    await query('UPDATE users SET token_version = token_version + 1 WHERE id = $1', [req.user!.userId]);
+    res.json({ message: 'Logged out' });
+  } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

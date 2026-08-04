@@ -12,6 +12,11 @@ import { authLimiter, registerLimiter, webhookLimiter } from './middleware/rateL
 
 const app = express();
 
+// nginx (dev y prod) siempre está delante del backend — sin esto, express-rate-limit
+// cuenta todos los requests bajo la IP del proxy y el cupo queda compartido entre
+// todos los usuarios en vez de por cliente real.
+app.set('trust proxy', 1);
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -28,7 +33,11 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Images and logos stay publicly static (thumbnails, branding). Videos are
+// intentionally NOT mounted here — they're only reachable via the authenticated
+// GET /api/courses/lessons/:id/stream endpoint.
+app.use('/uploads/images', express.static(path.join(process.cwd(), 'uploads', 'images')));
+app.use('/uploads/logos', express.static(path.join(process.cwd(), 'uploads', 'logos')));
 
 app.use('/api/payments/webhook', webhookLimiter);
 
@@ -45,7 +54,10 @@ app.get('/api/health', (_req, res) => {
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ message: err.message || 'Internal server error' });
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.status(500).json({
+    message: isProduction ? 'Error interno del servidor.' : (err.message || 'Internal server error'),
+  });
 });
 
 export default app;

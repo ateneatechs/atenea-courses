@@ -9,7 +9,7 @@ interface AuthContextType {
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -47,9 +47,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(data.user);
   };
 
-  const logout = () => {
-    localStorage.removeItem('atenea-token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // token might already be invalid/expired — still clear local state
+    } finally {
+      localStorage.removeItem('atenea-token');
+      setUser(null);
+    }
   };
 
   return (

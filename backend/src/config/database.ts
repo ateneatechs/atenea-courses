@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -24,5 +24,21 @@ export const query = async (text: string, params?: unknown[]) => {
   } catch (error) {
     console.error('Database query error:', error);
     throw error;
+  }
+};
+
+/** Run `fn` inside a BEGIN/COMMIT transaction on a dedicated client; ROLLBACK on any throw. */
+export const withTransaction = async <T>(fn: (client: PoolClient) => Promise<T>): Promise<T> => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
 };

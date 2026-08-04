@@ -20,8 +20,15 @@ const makeStorage = (subdir: string) =>
     },
   });
 
+const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
+// Explicit allowlist, not "anything image/*" — image/svg+xml is deliberately
+// excluded: an SVG can embed <script>/event-handler XSS that executes if the
+// file is ever opened directly instead of rendered inside an <img>.
 const imageFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  file.mimetype.startsWith('image/') ? cb(null, true) : cb(new Error('Only images allowed'));
+  ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype)
+    ? cb(null, true)
+    : cb(new Error('Formato de imagen no permitido. Usá JPG, PNG, WEBP o GIF.'));
 };
 
 const videoFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {

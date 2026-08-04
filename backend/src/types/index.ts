@@ -58,6 +58,7 @@ export interface JwtPayload {
   email: string;
   role: 'user' | 'admin' | 'super_admin';
   tenantId: string | null;
+  tokenVersion: number;
 }
 
 declare global {

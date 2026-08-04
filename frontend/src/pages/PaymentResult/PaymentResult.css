@@ -23,10 +23,11 @@
   max-width: 420px;
 }
 
-.payment-result-icon.approved { color: var(--color-success, #3fb950); }
-.payment-result-icon.pending  { color: var(--color-primary); }
-.payment-result-icon.rejected { color: var(--color-error, #e5484d); }
-.payment-result-icon.unknown  { color: var(--color-on-surface-variant); }
+.payment-result-icon.approved  { color: var(--color-success, #3fb950); }
+.payment-result-icon.pending   { color: var(--color-primary); }
+.payment-result-icon.rejected  { color: var(--color-error, #e5484d); }
+.payment-result-icon.forbidden { color: var(--color-error, #e5484d); }
+.payment-result-icon.unknown   { color: var(--color-on-surface-variant); }
 
 .payment-result-btns {
   display: flex;
